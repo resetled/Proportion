@@ -42,6 +42,7 @@ command_only=$1  #  yes / no
 check_dir () {
 		#printf "\nwork_dir=$work_dir\n"
 if [ ! -d "$AA" ]; then mkdir $AA;fi
+if [ ! -d "rubrick" ]; then mkdir rubrick;fi
 
 }
 backup_attach(){
