@@ -14,6 +14,7 @@ if [ ! -d "music" ]; then mkdir music;fi
 if [ ! -d "img" ]; then mkdir img; cp logo.png img/logo.png;fi
 if [ ! -d "archive" ]; then mkdir archive;fi
 if [ ! -d "attach" ]; then mkdir attach;fi
+if [ ! -d "thumbs" ]; then mkdir thumbs;fi
 
 if [ ! -d "last_image" ]; then mkdir last_image;fi
 
