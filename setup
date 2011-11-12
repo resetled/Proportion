@@ -223,7 +223,7 @@ let rubrick_N++									# Указываем номер следующей ру�
 
 if [ ! -f "./rubrick/$rubrick_N':r'$namer'.data'" ]; then			# атавизм...
 #echo "error detected - no way"
-				touch ./rubrick/$rubrick_N':r'$namer'.data'
+				#touch rubrick/$rubrick_N'r:'$namer'.data'
 				
 				work_dir="./"
 				img_dir="./img/"
@@ -250,6 +250,7 @@ if [ ! -f "./rubrick/$rubrick_N':r'$namer'.data'" ]; then			# атавизм...
 				
 				printf "# Корень\nwork_dir=$work_dir\n#\n# Директория с изображениями\nimg_dir=$img_dir\n#\n# Директория с миниатюрами изображений\nthumbnail=$thumbnail\n#\n# Директория с звуковыми/музыкальными записями\nmusic_dir=$music_dir\n#\n# Директория с текстовыми файлами\ntext_dir=$text_dir\n#\n#\n# Файл шаблона страницы\ntemplate=$template\n#\n# Опция 'только командный режим'\n# no выключена, yes - включена\nonly_command=$only_command\n#\n# Опция 'относительный путь для ссылок'\n# -r относительный путь, -a абсолютный путь\nabsolut_path=$absolut_path\n#\n# Номер элемента\nelement_number=$element_number\n#\n# Номер страницы\npage_number=$page_number\n#\n# Номер блока\nblock_number=$block_number\n#\n# Номер рубрики\nrubric_number=$rubric_number\n#\n# Страниц в блоке\npob_number=$pob_number\n#\n# Блоков в рубрике\nbor_number=$bor_number\n#\n# Максимум страниц в блоке\npob_max=$pob_max\n#\n# Максимум элементов на странице\nelement_max=$element_max" > rubrick/$rubrick_N'r:'$namer'.data'
 				echo 'Новая рубрика "'$namer'" была создана. Завершение... '
+				exit 1
 				tobreak=0
 fi
 
