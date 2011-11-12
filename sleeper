@@ -1,0 +1,350 @@
+#!/bin/bash
+# необходимые утилиты: 
+#sudo apt-get install mp3info
+#printf "sleeper: Start\n"
+
+name_element=0			# Имя элемента	
+type_element=0			# Тип элемента: картинка, текстовый блок, таблица, 
+src=0				# ссылка на объектный файл (txt, mp3, jpg ...)
+src_mod=0			# ссылка на объектный изменяемый файл (jpg, ...)
+htmlfile="attach"			# создаваемая страница
+#config="sleeper.conf"
+#data="sleeper.data"	# относится к настройкам генерации страниц кроме самих рубрик
+#----------------поместить после определения номера рубрики--------------------rubric_data="rubric.data"
+absolut_path="-r"
+
+	data=$1 		# полное имя файла рубрики для нового элемента
+	echo $data > last_mod_rubrick
+	file_name=$2	# имя файла на обработку
+	type_element=$3
+	absolut_path=$4 #  относительный или абсолютный генерируемый путь до файла ( -a или -r)
+	#echo 'полное имя файла рубрики = '$data
+
+
+
+#rubrick_name=$(ls rubrick| grep $name_rubrick|sort -n| uniq| cut -f 2 -d :|sed s'/.data/\n/')
+#echo "data=$data"
+
+				ls rubrick|tr '\t' '\n'> rubrick_tmp
+				#rubrick_name=$(basename $data)
+				#extension=${rubrick_name##*.}
+				#rubrick_name=${rubrick_name%.*}
+				rubrick_name=$(awk -F: '/'$data'/{print $2}' < rubrick_tmp)
+				rubric_number=$(echo $data|awk -F: '{print $1}'|awk -Fr '{print $1}')  #  передавать сюда номер рубрики или вычислять более простым путем!!!
+				#printf  "rubric_number=$rubric_number\ndata(full_name_rubrick)=$data" > sleeper_error
+#printf 'Файл рубрики: '$data'\nФайл на обработку: '$file_name'\nabsolut_path: '$absolut_path'\n'	
+work_dir=0		# инициализация переменных для директорий
+img_dir=0
+thumbnail=0
+music_dir=0
+text_dir=0
+only_command=0
+force_relative=0
+
+
+check_dir () {
+		#printf "\nwork_dir=$work_dir\n"
+if [ ! -d "$AA" ]; then mkdir $AA;fi
+if [ ! -d "$BB" ]; then mkdir $BB;fi
+if [ ! -d "$CC" ]; then mkdir $CC;fi
+if [ ! -d "$DD" ]; then mkdir $DD;fi
+if [ ! -d "$EE" ]; then mkdir $EE;fi
+if [ ! -d "$FF" ]; then mkdir $FF;fi
+if [ ! -d "last_image" ]; then mkdir last_image;fi
+}
+check_dir2(){
+	force_absolut="-a"
+}
+data_checker(){
+#echo $data #> work_data
+if [ ! -f "./rubrick/$data" ]; then			# атавизм...
+#echo "error detected - no way"
+none=0
+else
+		#printf "Файл существует			sleeper: config in $work_dir\n"
+		
+		work_dir=$(awk -F= '/work_dir=/{print $2}' < rubrick/$data)
+		
+		img_dir=$(awk -F= '/img_dir=/{print $2}'< rubrick/$data)
+		
+		thumbnail=$(awk -F= '/thumbnail=/{print $2}'< rubrick/$data)
+			
+		music_dir=$(awk -F= '/music_dir=/{print $2}'< rubrick/$data)
+		
+		text_dir=$(awk -F= '/text_dir=/{print $2}'< rubrick/$data)
+		
+		only_command=$(awk -F= '/only_command=/{print $2}'< rubrick/$data)
+		
+		absolut_path=$(awk -F= '/absolut_path=/{print $2}'< rubrick/$data)
+		
+		element_number=$(awk -F= '/element_number=/{print $2}'< rubrick/$data)
+		
+		page_number=$(awk -F= '/page_number=/{print $2}'< rubrick/$data)
+		
+		block_number=$(awk -F= '/block_number=/{print $2}'< rubrick/$data)
+		
+		template=$(awk -F= '/template=/{print $2}'< rubrick/$data)		
+		#rubric_number=$(awk -F= '/rubric_number=/{print $2}'< rubrick/$data)			# не используется так как валидный номер рубрики передается из setup
+		
+		pob_number=$(awk -F= '/pob_number=/{print $2}'< rubrick/$data)
+		
+		bor_number=$(awk -F= '/bor_number=/{print $2}'< rubrick/$data)
+		
+		pob_max=$(awk -F= '/pob_max=/{print $2}'< rubrick/$data)
+		
+		element_max=$(awk -F= '/element_max=/{print $2}'< rubrick/$data)
+		
+		if [ -z "$work_dir" ]
+				then
+				work_dir="./"
+				img_dir="./img/"
+				thumbnail="./thumbs/"
+				music_dir="./music/"
+				text_dir="./text/"
+				archive_dir="./archive/"
+				template="./template/template1.html"
+				only_command="no"
+				absolut_path="-r"
+				
+				element_number=1	# номер следующего элемента
+				page_number=1		# номер текущей страницы
+				block_number=1		# номер текущего блока
+				#rubric_number=1	# номер текущей рубрики						# не используется для записи по умолчанию
+				pob_number=1		# счетчик текущего кол-ва страниц в блоке
+				bor_number=1		# счетчик текущего кол-ва блоков
+				pob_max=5			# максимум страниц в блоке
+				element_max=16		# максимум элементов на странице
+				
+				AA=$work_dir 
+				BB=$img_dir
+				CC=$thumbnail
+				DD=$music_dir
+				EE=$text_dir
+				FF=$htmlfile
+				check_dir 
+				printf "# Корень\nwork_dir=$work_dir\n#\n# Директория с изображениями\nimg_dir=$img_dir\n#\n# Директория с миниатюрами изображений\nthumbnail=$thumbnail\n#\n# Директория с звуковыми/музыкальными записями\nmusic_dir=$music_dir\n#\n# Директория с текстовыми файлами\ntext_dir=$text_dir\n#\n#\n# Файл шаблона страницы\ntemplate=$template\n#\n# Опция 'только командный режим'\n# no выключена, yes - включена\nonly_command=$only_command\n#\n# Опция 'относительный путь для ссылок'\n# -r относительный путь, -a абсолютный путь\nabsolut_path=$absolut_path\n#\n# Номер элемента\nelement_number=$element_number\n#\n# Номер страницы\npage_number=$page_number\n#\n# Номер блока\nblock_number=$block_number\n#\n# Номер рубрики\nrubric_number=$rubric_number\n#\n# Страниц в блоке\npob_number=$pob_number\n#\n# Блоков в рубрике\nbor_number=$bor_number\n#\n# Максимум страниц в блоке\npob_max=$pob_max\n#\n# Максимум элементов на странице\nelement_max=$element_max" > ./rubrick/$data
+
+		fi
+
+fi
+}
+
+
+material_extension_checker(){
+				filename_short=$(basename $file_name)
+				extension=${filename_short##*.}
+				filename_short=${filename_short%.*}
+				
+}
+
+relative_path_material(){
+if [ "$type_element" == "image" ]	# распространенные форматы изображений
+				then
+				src="./img/$file_name"
+				src_mod="./thumbs/!thmb-$file_name"
+
+fi
+if [ "$type_element" == "text" ]	# тексты, в том числе с HTML разметкой (разметка будет зависеть от форматирования внешнего элемента, поэтому лучше включать внутренний style="")
+				then
+				src="./text/$file_name"
+				src_mod="./text/nice/nice-$file_name"
+fi
+if [ "$type_element" == "music" ]	# или другие бинарники
+				then
+				src="./music/$file_name"
+				src_mod="./music/nice/nice-$file_name"
+fi
+if [ "$type_element" == "archive" ]	# или другие бинарники
+				then
+				src="./archive/$file_name"
+				src_mod="./archive/nice/nice-$file_name"
+fi
+}
+
+absolute_path_material(){
+if [ "$type_element" == "image" ]	# распространенные форматы изображений
+				then
+				src="$img_dir$file_name"
+				src_mod="$thumbnail!thmb-$file_name"
+
+fi
+if [ "$type_element" == "text" ]	# тексты, в том числе с HTML разметкой (разметка будет зависеть от форматирования внешнего элемента, поэтому лучше включать внутренний style="")
+				then
+				src="$text_dir$file_name"
+				src_mod="$text_dir/nice/nice-$file_name"
+fi
+if [ "$type_element" == "music" ]	# или другие бинарники
+				then
+				src="$music_dir$file_name"
+				src_mod="$music_dir/nice/nice-$file_name"
+fi
+if [ "$type_element" == "archive" ]	# или другие бинарники
+				then
+				src="$music_dir$file_name"
+				src_mod="$music_dir/nice/nice-$file_name"
+fi
+}
+
+#printf 'Файл рубрики: '$data'\nФайл на обработку: '$file_name'\nabsolut_path: '$absolut_path'\n'
+if [ -z "$absolut_path" ]
+		then
+		#printf "Args:	1.$data  2.$file_name	3.$absolut_path\n"
+			if [ -z "$file_name" -o -z "$data" ]
+				then
+				
+		#if [ "$only_command" == "no" ];then
+		printf "Usage:  [image_full_name] [option]\n\n	[image_full_name]	file in your '$HOME/proportion/name_dir' directory\n				[name_dir]= img, music, text directories that must be created before use.\n	Options:\n		-a	absolut source links in generated html-file,\n			like a '$HOME/proportion/img/file1.jpg'\n\n		-r	relative source links in generated html-file,\n			like a './img/file1.jpg'\n\nRoman Storozhenko 2011.\nMail to boulerman@yandex.ru\n"
+		#fi
+		
+		exit 1
+			fi
+		force_absolut="-a"
+		
+		
+		#printf "sleeper: first line of config was empty!\nLoad default settings...\n"
+		#file_exist=$(ls $htmlfile| grep $file_name)
+		
+		if [ -f "attach/$file_name" ]
+			then
+			
+				if [ "$only_command" == "no" ];then
+		printf "sleeper: Файл уже существует - $file_exist\nАварийное завершение.\n"
+				fi
+		exit 1
+		fi
+fi
+		#file_exist=$(ls $htmlfile| grep $file_name)
+		#echo "htmlfile=$htmlfile, file_name=$file_name"
+		if [ -f "attach/$file_name" ]
+			then
+			#printf 'Файл существует: '$file_exist'\n'
+				if [ "$only_command" == "no" ];then
+		printf "sleeper: Файл уже существует - $file_exist\nАварийное завершение.\n"
+				fi
+		exit 1
+		fi
+
+#------------------------------------------Загрузка настроек и дата-файла-------------------------------------
+##error=0
+#printf "		Основной скрипт\n"
+##ls|grep $config > /dev/null
+#printf "$?		ошибка чтения параметра\n"
+##error=$?
+
+#config_checker
+#---------------------------------------Файл базы данных пока не определено куда сохранять, так как для каждой рубрики есть свой data файл.
+#					? Кроме того, есть список рубрик с их названиями и параметрами. Фактически sleeper это скрипт стоящий
+#					? на ступень ниже рубрикатора.
+#					? Каким образом будет реализован скрипт рубрикатора - таким образом и будут сохраняться настройки
+#					? для каждой рубрики (директории, субдиректории, N-вложенной директории)
+				#	Номера рубрик узнаем при сброке. Как собирать рубрику зависит от настройки НОМЕРА рубрики.
+
+data_checker
+#echo 'ЭКСПОРТ'$rubric_number' ЭКСПОРТ'$exported	
+
+#---------------------------------------------------------------------------------------------------------------
+material_extension_checker
+# Определение имени элемента, и директорий в зависимости от расширения
+# вариант когда нужен относительный путь к файлам:
+	if [ "$absolut_path" == "-r" ]
+			then
+			#printf "Относительный путь - активирован\n"
+			relative_path_material
+
+	fi
+# вариант когда нужен абсолютный путь:
+
+	if [ "$absolut_path" == "-a" ]
+			then
+			#printf "Абсолютный путь - активирован\n"
+			absolute_path_material
+	fi
+#  если явно не указан ключ - то абсолютный путь:
+	if [ "$force_absolut" == "-a" ]
+			then
+			#printf "Принудительно: Абсолютный путь - активирован! Используйте ключ -r для активации относительного пути.\n"
+			absolute_path_material
+	fi
+modify=1
+emt=0		# пустое значение, необходимо для подстановки во время чтения и записи Базы
+#echo 'Внимание: element_max='$element_max
+	if [ "$element_number" == "$element_max" ]
+			then
+			#pob_number=$(cat $pob_file)
+			
+			pob_max=$(cat rubrick/$rubric_number'r:'$rubrick_name|sed '/^#/d'| sed '/^$/d'|grep pob_max| sed s'/pob_max=/\n/'| sed '/^$/d')
+			
+			pob_number=$(echo "$pob_number+1"|bc)
+			page_number=$(echo "$page_number+1"|bc)
+			
+			printf "# Корень\nwork_dir=$work_dir\n#\n# Директория с изображениями\nimg_dir=$img_dir\n#\n# Директория с миниатюрами изображений\nthumbnail=$thumbnail\n#\n# Директория с звуковыми/музыкальными записями\nmusic_dir=$music_dir\n#\n# Директория с текстовыми файлами\ntext_dir=$text_dir\n#\n# Опция 'только командный режим'\n# no выключена, yes - включена\nonly_command=$only_command\n#\n# Опция 'относительный путь для ссылок'\n# -r относительный путь, -a абсолютный путь\nabsolut_path=$absolut_path\n#\n# Номер элемента\nelement_number=$element_number\n#\n# Номер страницы\npage_number=$page_number\n#\n# Номер блока\nblock_number=$block_number\n#\n# Номер рубрики\nrubric_number=$rubric_number\n#\n# Страниц в блоке\npob_number=$pob_number\n#\n# Блоков в рубрике\nbor_number=$bor_number\n#\n# Максимум страниц в блоке\npob_max=$pob_max\n#\n# Максимум элементов на странице\nelement_max=$element_max" > ./rubrick/$data
+		
+			if [ "$pob_number" == "$pob_max" ]
+						then
+						#bor_number=$(cat $block_file)
+						bor_number=$(cat rubrick/$rubric_number'r:'$rubrick_name|sed '/^#/d'| sed '/^$/d'|grep bor_number| sed s'/bor_number=/\n/'| sed '/^$/d')
+						
+						bor_number=$(echo "$bor_number+1"|bc)
+						pob_number=1
+						
+						printf "# Корень\nwork_dir=$work_dir\n#\n# Директория с изображениями\nimg_dir=$img_dir\n#\n# Директория с миниатюрами изображений\nthumbnail=$thumbnail\n#\n# Директория с звуковыми/музыкальными записями\nmusic_dir=$music_dir\n#\n# Директория с текстовыми файлами\ntext_dir=$text_dir\n#\n# Опция 'только командный режим'\n# no выключена, yes - включена\nonly_command=$only_command\n#\n# Опция 'относительный путь для ссылок'\n# -r относительный путь, -a абсолютный путь\nabsolut_path=$absolut_path\n#\n# Номер элемента\nelement_number=$element_number\n#\n# Номер страницы\npage_number=$page_number\n#\n# Номер блока\nblock_number=$block_number\n#\n# Номер рубрики\nrubric_number=$rubric_number\n#\n# Страниц в блоке\npob_number=$pob_number\n#\n# Блоков в рубрике\nbor_number=$bor_number\n#\n# Максимум страниц в блоке\npob_max=$pob_max\n#\n# Максимум элементов на странице\nelement_max=$element_max" > ./rubrick/$data
+
+			fi
+			if [ "$pob_number" != "$pob_numbermax" ]
+						then
+
+						element_number=1
+						#block_number=$(cat $block_file)
+						block_number=$(cat rubrick/$rubric_number'r:'$rubrick_name|sed '/^#/d'| sed '/^$/d'|grep block_number| sed s'/block_number=/\n/'| sed '/^$/d')
+						
+			fi
+			
+fi
+if [ "$element_number" != "$element_max" ]
+			then
+			#rubric_number=$rubric_number
+			#echo "export: $rubric_number"
+			#./genElement $filename_short $type_element $src $src_mod $htmlfile $config	# [имя_элемента тип_элемента ссылка_на_материал ссылка_на_превью]
+			#printf "[sleeper 347 строка]$filename_short $type_element $src $src_mod $htmlfile $data $rubric_number $page_number $element_number $file_name $rubrick_name\n"
+			if [ "$only_command" == "no" ];then
+			#echo -e "\e[36m\n$rubric_number\e[0m\n"
+			none=0
+			fi
+			
+			exported=$page_number			
+			
+			#-------------------------------
+			last_name_rubrick=$(ls rubrick| grep $rubrick_number'r:')
+			template=$(awk -F= '/template=/{print $2}'< rubrick/$last_name_rubrick)
+			if [ -z "$last_name_rubrick" ]; then
+				echo "Номер рубрики пустой (makepage: ls rubrick| grep 'some_number'r:). Завершение работы"
+				exit 1
+			fi 
+			
+			if [ -z "$template" ]; then
+				echo "В файле настройки рубрики нет строки: template=/путь_до_файла/шаблона.  Завершение работы"
+				exit 1
+			fi 
+			##-------------------------------
+			./genElement $filename_short $type_element $src $src_mod $htmlfile $data $rubric_number $page_number $element_number $file_name $rubrick_name #$data
+			
+			#_______________________________________________________
+			
+			element_number=$(echo "$element_number+1"|bc) # счетчик элементов обновлен
+			
+
+			
+
+			#echo $element_number > ./rubrick/element_s
+			printf "# Корень\nwork_dir=$work_dir\n#\n# Директория с изображениями\nimg_dir=$img_dir\n#\n# Директория с миниатюрами изображений\nthumbnail=$thumbnail\n#\n# Директория с звуковыми/музыкальными записями\nmusic_dir=$music_dir\n#\n# Директория с текстовыми файлами\ntext_dir=$text_dir\n#\n#\n# Файл шаблона страницы\ntemplate=$template\n#\n# Опция 'только командный режим'\n# no выключена, yes - включена\nonly_command=$only_command\n#\n# Опция 'относительный путь для ссылок'\n# -r относительный путь, -a абсолютный путь\nabsolut_path=$absolut_path\n#\n# Номер элемента\nelement_number=$element_number\n#\n# Номер страницы\npage_number=$page_number\n#\n# Номер блока\nblock_number=$block_number\n#\n# Номер рубрики\nrubric_number=$rubric_number\n#\n# Страниц в блоке\npob_number=$pob_number\n#\n# Блоков в рубрике\nbor_number=$bor_number\n#\n# Максимум страниц в блоке\npob_max=$pob_max\n#\n# Максимум элементов на странице\nelement_max=$element_max" > ./rubrick/$data
+			#echo -e " \e[36m$element_number\n $page_number\n $block_number\n $rubric_number\n $pob_number\n $bor_number\n $pob_max\n $element_max\e[0m\n"
+			# изменения записаны
+				
+	fi
+		#if [ "$only_command" == "yes" ];then
+#echo 'ЭКСПОРТ'$rubric_number' ЭКСПОРТ'$exported	#  экспортируемые значения (только в командном режиме) для скрипта MAKELINK
+								#	номер рубрики и номер последнего добавленного элемента (не следующий как в конфиге)
+		#fi
+		echo $rubric_number' '$exported
+		#echo $rubric_number' '$exported > sleeper_error2
+exit 0

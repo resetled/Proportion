@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [ ! -f "ftpconfig" ];then
+printf "# Файл настройки FTP доступа. Укажите Ваш логин, пароль к Вашему ресурсу.\n# Значения должны быть без пробелов после знака равно: \n# login=user\n# password=admin\n\n# Параметр path_to_work_dir указывает на директорию, в которой будут обновляться файлы. \n\nlogin=\npassword=\npath_to_work_dir=\npath_to_rss_feed=\n" > ftpconfig
+echo "ВНИМАНИЕ: Заполните конфигурационный файл ftpconfig"
+echo "Завершение..."
+exit 1
+fi
+login=$(cat ftpconfig|awk -F= '/^login=/{print $2}')
+pass=$(cat ftpconfig|awk -F= '/^password=/{print $2}')
+path_to_work_dir=$(cat ftpconfig|awk -F= '/^path_to_work_dir=/{print $2}')
+path_to_rss_feed=$(cat ftpconfig|awk -F= '/^path_to_rss_feed=/{print $2}')
+
+files=`ls -1 -d */|sed s'/attach//g'|sed s'/text//g'|sed s'/res//g'|sed s'/last_image//g'|sed s'/rubrick//g'|sed s'/SCRIPT_FAST_ACESS//g'|sed s'/template//g'|sed '/^git/d'|sed '/^\//d'|sed /^$/d`
+
+directories=`echo "$files"|wc -l`
+
+
+echo "$files" > upload_list
+
+while read DIR; do
+
+cd ./$DIR
+rm -Rf links	# удаляем файлы линковщика
+wput ftp://$login:$pass@$path_to_work_dir/$DIR
+cd ..
+
+done < upload_list
+
+# RSS лента:
+wput -nv rss.xml ftp://$login:$pass@$path_to_rss_feed

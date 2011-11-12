@@ -1,0 +1,128 @@
+#!/bin/bash
+		#Hcanvas=118		# высота области размещения  152
+		#Wcanvas=158		# ширина области размещения  152
+
+		image=$1
+		image1=$2
+		Hcanvas=$3
+		Wcanvas=$4
+				
+		W_image=0			# ширина картинки
+		H_image=0			# высота картинки
+		Wresize_image=1		# ширина картинки после пропорционального масштабирования
+		Hresize_image=1		# высота картинки после пропорционального масштабирования
+		H_margin=1			# разность по высоте, между областью и масштабированной картинкой
+		W_margin=1			# разность по ширине, между областью и масштабированной картинкой
+		H_ready=1			# готовая высота картинки
+		W_ready=1			# готовая ширина картинки
+		top=1				# отступ сверху от рамки
+		right=1				# отступ справа от рамки
+		bottom=1			# отступ снизу от рамки
+		left=1				# отступ слева от рамки	
+		
+		
+		error_check(){
+		if [ -z "$Hcanvas" ]
+				then
+				printf "\n[scaleimage]: input Hcanvas =$Hcanvas - that means ZERO, exit.\n"
+				exit 0
+		fi
+		if [ -z "$Wcanvas" ]
+				then
+				printf "\n[scaleimage]: input Wcanvas =$Wcanvas - that means ZERO, exit.\n"
+				exit 0
+		fi
+		}
+		calc1 () {
+
+		H_ready=$(perl -e "printf(\"%.0f\",$*)")		# округляет до целых; %.1f до десятых после запятой, %.2f до сотых и т.д.
+				} 
+		calc2 () {
+
+		W_ready=$(perl -e "printf(\"%.0f\",$*)")
+				} 
+		
+		horizontal(){
+			if [ "$K" -eq "1" ]	
+		then		
+		H_ready=$(echo "scale=3; ($H_image * $Wcanvas) / $W_image"| bc) 
+
+		calc1 "$H_ready * 1"
+		W_ready=$Wcanvas	# задаем ширину изображения == ширине рамки
+		W_margin=0 	# заранее знаем, что отступов по ширине не будет
+		
+		if [ "$Hcanvas" -gt "$H_ready" ]	#---------------
+				then
+				# сразу же вычисляем разность по высоте между рамкой и  полученным изображением:
+				read H_margin <<< $(bc <<< "$Hcanvas - $H_ready")
+				#printf "H_margin=$H_margin\n"
+				#printf "W_margin=$W_margin\n" # заранее знаем, что отступов по ширине не будет: W_margin=0
+				top=$H_margin
+				bottom=0
+				left=30
+				right=0
+		fi
+		if [ "$Hcanvas" -eq "$H_ready" ]
+				then
+				H_margin=0				
+				left=30
+				right=0				
+				bottom=0
+				top=0 
+		fi	
+fi
+		}
+		vertical(){
+		if [ "$K" -eq "2" ]	
+		then
+	
+		W_ready=$Wresize_image
+		H_ready=$Hcanvas	# задаем высоту изображения == высоте рамки
+		H_margin=0 	# заранее знаем, что отступов по высоте не будет
+		W_ready=$(echo "scale=3; ($W_image * $Hcanvas) / $H_image"| bc)
+		calc2 "$W_ready * 1"
+		read W_margin <<< $(bc <<< "$Wcanvas - $W_ready")
+		read left <<< $(bc <<< "$W_margin / 2")
+		right=0 #right=$left
+		left=$(echo "$left + 30"| bc)
+		top=0
+		bottom=0			
+fi	
+		}
+		square(){
+		if [ "$K" -eq "3" ]		#---------------
+		then
+				H_margin=0
+				W_margin=0				
+				left=30
+				right=0			
+				bottom=0
+				top=0 
+				W_ready=$Wcanvas
+				H_ready=$Hcanvas
+		fi
+		}
+				
+		size_info=$(ls -lah $image |awk '{ print $5}') # размер файла
+		error_check
+		read image <<< $image
+		read H_image W_image <<< $(identify -format "%[fx:h] %[fx:w]" $image)
+		K=0
+		var1='1'	#	вытянуто по горизонтали,--> W_ready=Wcanvas
+		var2='2'	#	вытянуто по вертикали,--> H_ready=Hcanvas
+		var3='3'	#	квадрат,--> W_ready=Wcanvas, H_ready=Hcanvas
+		K=$(echo "scale=3; var=1; var=$H_image / $W_image; if(var < 1)  print $var1; if(var > 1) print $var2;if(var == 1) print $var3;" | bc)
+		
+		horizontal
+		
+		vertical
+		
+		square
+
+
+
+convert -resize $W_ready'x'$H_ready -quality 85% $image $image1
+
+printf "$size_info $W_ready $H_ready $W_image $H_image $top $right $bottom $left"
+
+exit 0

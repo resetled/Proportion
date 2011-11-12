@@ -1,0 +1,181 @@
+Proportion 0.1.4.3, Roman Storozhenko <info@storozhenko.org>
+GPL license (see COPYING)
+
+Bash scripts system for automatic generation of html pages.
+
+CONTENTS
+========
+
+   * Installing on Linux and other platforms
+   * Running the system
+   * Using the system
+
+
+INSTALLATION ON LINUX AND OTHER PLATFORMS
+===============================
+1) At first, you need install imagemagick, mp3info, basename, bc, awk, perl
+sudo apt-get install [programm_name]
+
+2) Then, unpack zip file with scripts.
+
+
+RUNNING THE SYSTEM
+=========================
+You can run start using scripts with the following command:
+
+$ cd proportion-0.1.4.3
+$ bash setup [options]
+or
+./setup [options]
+
+Options for 'setup':
+  no                 	     disable command_only mode.
+  yes [or any]		     enable comand_only mode.
+
+
+USING THE SYSTEM
+=======================
+
+Attention! To add files to get rid of spaces in names and possibly replace the spaces with "_". 
+You can not use dashes. If you are not subject to this rule - guaranteed to malfunction.
+
+		setup		Script to delete and add material on the page.
+		makepage	Script allows you to "compile" page.
+		makelink	Script allows you to link your page. This creates cross-references to other pages.
+		genElement	Script is responsible for generating different types of elements.
+		scaleimage	Script proportionally scales the image, fitting it under a certain standard size for the gallery.
+		sleeper		The script works with the file headings, change the values of the counters and so on.
+		rss_gen		Script generates the rss feed.
+
+USAGE:
+=======================
+setup [option]
+
+	no		disable command_only mode.
+	yes [or any]	enable comand_only mode.
+
+makepage [option1] [option2]
+
+	[option1]	rubrick number
+	[option2]	page number
+
+makelink [option1] [option2]
+
+	[option1]	rubrick number
+	[option2]	page number
+
+genElement [filename_short] [type_element] [src] [src_mod] [htmlfile] [data] [rubric_number] [page_number] [element_number] [file_name] [rubrick_name]
+	
+	[filename_short] The file name without extension
+
+	[type_element]	file Type
+			Possible types of elements:
+			image, text, music, archive
+
+	[src]		Full path to file. Use a relative path, for example as follows:  ./Path/to/file
+
+	[src_mod]	The full path to the changed file (thumbnail)
+			Use a relative path, for example as follows:  ./Path/to/file
+
+	[htmlfile]	Extension to File Attach
+			By default *.attach
+
+	[data]		The configuration file rubrick
+			for example:  ./rubrick/1r:Untitled_100.data
+
+	[rubric_number]	The ordinal number of the section (rubrick)
+			for example: 1
+
+	[page_number]	The ordinal number of the page (on rubrick)
+			for example: 1
+
+	[element_number]The ordinal number of the page (on page)
+			for example: 1
+
+	[file_name]	The file name
+			for example: Untitled_file.jpg
+
+	[rubrick_name]	The rubrick name
+			for example: Untitled_100
+
+scaleimage [image] [image_mod] [Hcanvas] [Wcanvas]
+
+	[image]		Full path to image. Use a relative path, for example as follows:  ./Path/to/file
+
+	[image_mod]	The full path to the changed image (thumbnail)
+
+	[Hcanvas]	The height of the canvas, which will be inscribed in the picture.
+			Default: 153 px
+
+	[Wcanvas]	The width of the canvas, which will be inscribed in the picture.
+			Default: 153 px
+
+sleeper	[full_name_rubrick] [file_name] [type_element] [options]
+
+	[full_name_rubrick]	The configuration file rubrick.
+			for example:	1r:Untitled_100.data
+
+	[file_name]	The file name
+			for example: Untitled_file.jpg
+
+	[type_element]	file Type
+			Possible types of elements:
+			image, text, music, archive
+
+	[options]	Relative or absolute path to the generated file.
+			-r   or  -a
+
+CONFIGURATION FILES:
+=======================
+
+The existing configuration files that can be edited:
+	
+	1r:Untitled.data	Page Setup (rubrick). Separately, you can specify the path to the template, etc.
+	
+	rssconfig		Provides general configuration file generation RSS.
+	
+	news_container		Contains the current setting of updates RSS.
+	
+	thumbnail.conf		Contains configuration thumbnails. Located in the ./thumbs
+
+CATALOGUE:
+=======================
+
+Responsible for what each directory:
+	
+	attach			Responsible for storing all the items in all categories.
+	
+	img			Responsible for storing all types of images. Attention! The file name can not contain spaces or dashes.
+
+	last_image		The directory responsible for storing information about the last element added - pictures.
+
+	music			Responsible for storing music files.
+
+	res			Responsible for storing files, CSS and other design pages.
+	
+	rubrick			Responsible for storing the configuration files for the Category (rubrick)
+
+	SCRIPT_FAST_ACESS	These scripts are useful for adding them to the buttons. Want to edit under the current directory and needs.
+
+	template		The directory contains a file or template file html pages.
+				Tags used in this template:
+
+		<!--Заголовок_страницы-->		page heading
+		<!--Название_рубрики(страницы)-->	Name of section or page
+		<!--Контент--> 				Main content of page. After that, the tag will be inserted all the elements of this page.
+		<!--Переключатель_страниц-->		switch pages
+
+	Note: You can change the tags, you will need to replace their name in the script makepage. Or to describe it as a function of other tags.
+
+
+	text			The directory contains only text files with the extensions txt.
+				These files can use Hypertext Markup.
+				To split the text into paragraphs - you must use the symbol ¶
+
+	thumbs			The directory contains the configuration file thumbnails, as well as their own miniatures.
+
+	<YOUR_CATALOGUE>	The folder is created with the same name as its title. 
+				Contains a ready-made html page as well as a directory with files linking. 
+				To use the page file linking - not needed.
+
+http://storozhenko.org/blog/README

@@ -1,0 +1,857 @@
+#!/bin/bash
+# Линковщик:
+		#	ВНИМАНИЕ!!!  Для режима отладки изменяем значение debug_mode на 1
+		#				 В этом режиме скрипт не выводит значения линков в файл(ы), 
+		#				 вывод происходит на экран, с цветовой индикацией.
+debug_mode=0
+		
+
+		r1=$1
+
+		n1=$2
+
+		#r1="2"
+
+		#n1="1"
+
+#debug_mode=$2	
+#	echo $r1'- рубрика, '$n1'- номер страницы'
+Attribute=0  # 00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed 
+#	A="./$rubrick_name_title/"								# Корень генерации документов
+#	B="./$rubrick_name_title/"			# Корень генерации документов + имя рубрики
+#	C='./'$rubrick_name_title'/links/'	# Директория генерации ссылок
+# xterm -fg white -bg black -vb -sl 2048
+
+green='-e \e['$Attribute';32m' 
+black='-e \e['$Attribute';30m' 
+red='-e \e['$Attribute';31m' 
+yellow='-e \e['$Attribute';33m' 
+blue='-e \e['$Attribute';34m' 
+magenta='-e \e['$Attribute';35m' 
+cyan='-e \e['$Attribute';36m'
+white='-e \e['$Attribute';37m'
+
+endColor='\e[0m'
+# Usage:	echo -e "${green}Welcome \e[5;32;47m $USER \n${endColor}"
+only_for_algo1=0
+j=1
+pob=0
+# Переменные для links_sheme
+AA=	# Корень генерируемых документов
+BB=	# название рубрики
+CC=	# Номер страницы
+DD=	# Название страницы
+EE=	# Альтернативное имя страницы
+FF=	# Ссылка:  графический элемент / текст / номер / символ
+
+safe_x=1
+sheme=0	#  какой тип ссылки выдать
+overwrite=0
+
+link_content(){ 
+
+ simple_link=$(echo '<a href="''./'$BB$CC''.html'" title="'$DD' page" alt="'$EE' page">'$FF'</a>')
+ empty_link=$(echo ' <b>'$CC'</b>')
+#echo "пустой символ без ссылки: $empty_link"
+ next_page_local=$(echo ' <a href="''./'$BB$CC''.html'" title="'$DD' page" alt="'$EE' page">| next </a>')
+ previos_page_local=$(echo '<a href="''./'$BB$CC''.html'" title="'$DD' page" alt="'$EE' page">back | </a>')
+ previos_page_link=$(echo ' <a href="''./'$BB$CC''.html'" title="'$DD' page" alt="'$EE' page">PREVIOS '$pob_max' |</a>')
+ next_page_link=$(echo ' <a href="''./'$BB$CC''.html'" title="'$DD' page" alt="'$EE' page">| NEXT '$pob_max'</a>  ')
+
+ link_file=$(echo $rubrick_name_title'/links/'$rubrick_number'r:'$n'p:link')
+}
+		
+links_sheme(){				# вывод в файлы
+
+	link_content			# обновление данных в ссылках
+	#echo "links_sheme -->"
+	if [ "$debug_mode" -eq "0" ];then
+		#	Формы ссылки ©  
+	#	Для использования необходимо присвоить переменным значения из функций:
+	#	A,B,C,D,E,F - внутренние переменные 
+	#	Пример:
+	#
+	#	<Любой алгоритм из приведенных ниже>
+	#	AA=$tmp; BB=$tmp; CC=$tmp; DD=$tmp; EE=DD; FF=DD; sheme=1;	# присвоение, установка типа ссылок.
+	#	links_sheme									# вызов функции
+	#	<конец>
+	if [ "$sheme" -eq "1" ];then		# простая ссылка
+	AA=$rubrick_name_title'/' # Корень генерации документов
+	BB=$rubrick_name_title
+	echo $simple_link >> $link_file
+	
+	fi
+
+	if [ "$sheme" -eq "2" ];then		# пустой символ без ссылки - обозначающий текущую страницу
+	echo $empty_link >> $link_file
+	#echo "Появился символ для записи: $empty_link"
+	fi
+	
+	if [ "$sheme" -eq "3" ];then		# конец ссылок и подпись Темы
+	AA=$rubrick_name_title # Корень генерации документов
+	BB=$rubrick_name_title
+	if [ "$n" -lt "$num_page" ];then
+	
+	let CC=n+1
+	let DD=n+1
+	let EE=n+1
+	link_content
+	echo $next_page_local >> $link_file
+	fi
+	
+	fi
+	
+	if [ "$sheme" -eq "6" ];then		# Предыдущая страница
+	AA=$rubrick_name_title # Корень генерации документов
+	BB=$rubrick_name_title
+		if [ "$n" -ne "1" ];then
+	
+		let CC=n-1
+		let DD=n-1
+		let EE=n-1
+		link_content
+		echo $previos_page_local >> $link_file
+	fi
+	fi
+
+	if [ "$sheme" -eq "4" ];then		# ссылка указывающая на предыдущий блок страниц
+	AA="$rubrick_name_title/" # Корень генерации документов
+	BB="$rubrick_name_title"
+	FF='Previos'
+	echo $previos_page_link >> $link_file
+	
+	fi
+
+	if [ "$sheme" -eq "5" ];then		# ссылка указывающая на следующий блок страниц
+	AA="$rubrick_name_title/" # Корень генерации документов
+	BB="$rubrick_name_title"
+	FF='Next'
+	echo $next_page_link >> $link_file
+	
+	fi
+
+
+	if [ "$sheme" -eq "7" ];then		# Нижний переключатель страниц
+	none=0
+	fi
+else
+
+	#	Формы ссылки © Debug Mode
+	#	Для использования необходимо присвоить переменным значения из функций:
+	#	A,B,C,D,E,F - внутренние переменные 
+	#	Пример:
+	#
+	#	<Любой алгоритм из приведенных ниже>
+	#	AA=$tmp; BB=$tmp; CC=$tmp; DD=$tmp; EE=DD; FF=DD; sheme=1;	# присвоение, установка типа ссылок.
+	#	links_sheme									# вызов функции
+	#	<конец>
+	if [ "$sheme" -eq "1" ];then		# простая ссылка
+	AA=$rubrick_name_title'/' # Корень генерации документов
+	BB=$rubrick_name_title'/'
+	echo ${yellow}''$simple_link''${endColor} #>> $AA'links/'$rubrick_number'r:'$n'p:link2'
+	fi
+
+	if [ "$sheme" -eq "2" ];then		# пустой символ без ссылки - обозначающий текущую страницу
+	echo ${green}''$empty_link''${endColor} #>> $AA'links/'$rubrick_number'r:'$n'p:link1'
+	fi
+	
+	if [ "$sheme" -eq "3" ];then		# конец ссылок и подпись Темы
+	AA=$rubrick_name_title # Корень генерации документов
+	BB=$rubrick_name_title
+	echo $end_blok_links #>> $AA'links/'$rubrick_number'r:'$n'p:link2'
+	
+	fi
+
+	if [ "$sheme" -eq "4" ];then		# ссылка указывающая на предыдущий блок страниц
+	AA="$rubrick_name_title/" # Корень генерации документов
+	BB="$rubrick_name_title"
+	FF='Previos'
+	echo ${blue}''$previos_page_link''${endColor} #>> $AA'links/'$rubrick_number'r:'$n'p:link2'
+	fi
+
+	if [ "$sheme" -eq "5" ];then		# ссылка указывающая на следующий блок страниц
+	AA="$rubrick_name_title/" # Корень генерации документов
+	BB="$rubrick_name_title"
+	FF='Next'
+	echo ${cyan}''$next_page_link''${endColor} #>> $AA'links/'$rubrick_number'r:'$n'p:link2'
+	
+	
+	fi
+
+	if [ "$sheme" -eq "6" ];then		# Верхний переключатель страниц
+	AA=$rubrick_name_title # Корень генерации документов
+	BB=$rubrick_name_title
+	echo $header_links_sheme #> $AA'links/'$rubrick_number'r:'$n'p:link1'
+	
+	fi
+
+	if [ "$sheme" -eq "7" ];then		# Нижний переключатель страниц
+	echo $foot_links_sheme #> $AA'links/'$rubrick_number'r:'$n'p:link2'
+	fi
+	
+	
+		if [ "$sheme" -eq "1" ];then		# простая ссылка
+	AA=$rubrick_name_title'/' # Корень генерации документов
+	BB=$rubrick_name_title
+	echo $simple_link >> $link_file
+	
+	fi
+
+	if [ "$sheme" -eq "2" ];then		# пустой символ без ссылки - обозначающий текущую страницу
+	echo $empty_link >> $link_file
+	#echo "Появился символ для записи: $empty_link"
+	fi
+	
+	if [ "$sheme" -eq "3" ];then		# конец ссылок и подпись Темы
+	AA=$rubrick_name_title # Корень генерации документов
+	BB=$rubrick_name_title
+	if [ "$n" -lt "$num_page" ];then
+	
+	let CC=n+1
+	let DD=n+1
+	let EE=n+1
+	link_content
+	echo $next_page_local >> $link_file
+	fi
+	
+	fi
+	
+	if [ "$sheme" -eq "6" ];then		# Предыдущая страница
+	AA=$rubrick_name_title # Корень генерации документов
+	BB=$rubrick_name_title
+		if [ "$n" -ne "1" ];then
+	
+		let CC=n-1
+		let DD=n-1
+		let EE=n-1
+		link_content
+		echo $previos_page_local >> $link_file
+	fi
+	fi
+
+	if [ "$sheme" -eq "4" ];then		# ссылка указывающая на предыдущий блок страниц
+	AA="$rubrick_name_title/" # Корень генерации документов
+	BB="$rubrick_name_title"
+	FF='Previos'
+	echo $previos_page_link >> $link_file
+	
+	fi
+
+	if [ "$sheme" -eq "5" ];then		# ссылка указывающая на следующий блок страниц
+	AA="$rubrick_name_title/" # Корень генерации документов
+	BB="$rubrick_name_title"
+	FF='Next'
+	echo $next_page_link >> $link_file
+	
+	fi
+
+
+	if [ "$sheme" -eq "7" ];then		# Нижний переключатель страниц
+	none=0
+	fi
+fi
+}
+
+check_dir () {
+		
+if [ ! -d "$A" ]; then mkdir $A;fi
+if [ ! -d "$B" ]; then mkdir $B;fi
+if [ ! -d "$C" ]; then mkdir $C;fi
+}
+check_file(){
+if [ -f "$A" ]; then printf '\n' > $A;fi
+}
+current_max_checker (){
+			if [ "$only_for_algo1" -eq "1" ];then
+			current_max=$pob_max
+			#echo ${cyan}'[current_max_checker]'${endColor}
+			#echo ${magenta}'current_max=('$current_max') == pob_max('$pob_max')\n'${endColor}
+			else
+ if [ "$safe_x" -eq "1" ];then current_max=$(echo "$pob_max + $pob_max" | bc); fi
+ if [ "$safe_x" -ne "1" ];then current_max=$(echo "$safe_x + $pob_max" | bc);fi
+			fi
+}
+
+before_links1(){
+while [ "$i" -le "$n" ];do  #генерация ссылок i до текущей страницы
+
+		
+	if [ "$i" -ne "$n" -a "$i" -lt "$n" ];then  #	i не равно n  и i меньше n
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$i	# Номер страницы
+		DD=$i	# Название страницы
+		EE=$i	# Альтернативное имя страницы
+		FF=$i	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=1
+		links_sheme
+	fi
+		if [ "$i" -eq "$n" ];then 
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$n	# Номер страницы
+		DD=0	# Название страницы
+		EE=0	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=2
+		links_sheme
+		fi
+
+		let i++
+done	#генерация ссылок i до текущей страницы
+}
+after_links1(){
+while [ "$i" -le "$pob" -a  "$i" -gt "$n" ];do  # i меньше или равно общему числу страниц(оно заведомо меньше max) и больше текущего числа n
+		
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$i	# Номер страницы
+		DD=$i	# Название страницы
+		EE=$i	# Альтернативное имя страницы
+		FF=$i	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=1
+		links_sheme
+	let i++
+done	
+if [ "$i" -gt "$pob" ];then
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$i	# Номер страницы
+		DD=$i	# Название страницы
+		EE=$i	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=5
+		links_sheme
+		fi
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+	 	CC=0	# Номер страницы
+		DD=0	# Название страницы
+		EE=0	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=3
+		links_sheme
+}
+
+before_links2(){
+
+if [ "$tmp" -eq "1" ];then
+
+		if [ "$only_for_algo1" -eq "1" ];then
+		null=0 # ничего не значащее назначение, только для ALGO1
+		else
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$Z	# Номер страницы
+		DD=$Z	# Название страницы
+		EE=$Z	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=4	# ссылка указывающая на предыдущий блок страниц
+		links_sheme
+		fi
+let Z++
+while [ "$Z" -lt "$j" ];do
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$Z	# Номер страницы
+		DD=$Z	# Название страницы
+		EE=$Z	# Альтернативное имя страницы
+		FF=$Z	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=1	# простая ссылка
+		links_sheme
+let Z++
+done
+		if [ "$only_for_algo1" -eq "1" ];then
+		null=0 # ничего не значащее назначение, только для ALGO1
+		else
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$j	# Номер страницы
+		DD=0	# Название страницы
+		EE=0	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=2	# пустой символ без ссылки - обозначающий текущую страницу
+		links_sheme
+		fi
+else
+		if [ "$only_for_algo1" -eq "1" ];then
+		null=0 # ничего не значащее назначение, только для ALGO1
+		else
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$j	# Номер страницы
+		DD=$j	# Название страницы
+		EE=$j	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=4	# ссылка указывающая на предыдущий блок страниц
+		links_sheme
+		fi
+fi
+
+		if [ "$only_for_algo1" -eq "1" ];then
+		quant=1
+		
+		while [ "$quant" -lt "$n" -o "$quant" -eq "$n" ]; do
+
+if [ "$quant" -eq "$n" ];then
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$quant	# Номер страницы
+		DD=0	# Название страницы
+		EE=0	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=2	# пустой символ без ссылки - обозначающий текущую страницу
+		#echo "пустой символ без ссылки: $CC"
+		links_sheme
+		break
+fi
+if [ "$quant" -lt "$n" ];then
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$quant	# Номер страницы
+		DD=$quant	# Название страницы
+		EE=$quant	# Альтернативное имя страницы
+		FF=$quant	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=1	# простая ссылка
+		links_sheme
+fi
+let quant++
+done
+
+		else
+let j++
+while [ "$j" -lt "$n" -o "$j" -eq "$n" ]; do
+if [ "$j" -eq "$n" ];then
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$j	# Номер страницы
+		DD=0	# Название страницы
+		EE=0	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=2	# пустой символ без ссылки - обозначающий текущую страницу
+		links_sheme
+	break
+fi
+if [ "$j" -lt "$n" ];then
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$j	# Номер страницы
+		DD=$j	# Название страницы
+		EE=$j	# Альтернативное имя страницы
+		FF=$j	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=1	# простая ссылка
+		links_sheme
+fi
+let j++
+done
+
+
+fi
+}
+
+after_links2(){
+
+let j++
+if [ "$num_page" -gt "$current_max" ]; then
+
+	if [ "$tmp" -eq "0" ]; then  #-----SPECIAL HAPPEN
+	
+		while [ "$j" -le "$current_max" ];do
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$j	# Номер страницы
+		DD=$j	# Название страницы
+		EE=$j	# Альтернативное имя страницы
+		FF=$j	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=1	# простая ссылка
+		links_sheme
+		let j++
+		
+		done
+		
+		if [ "$j" -gt "$current_max" ];then
+		if [ "$only_for_algo1" -eq "1" ];then
+				none=0
+				else
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$j	# Номер страницы
+		DD=$j	# Название страницы
+		EE=$j	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=5		# ссылка указывающая на следующий блок страниц
+		links_sheme
+				fi
+		fi
+		
+	else
+	let j--
+	JJJ=$j  
+	
+				if [ "$only_for_algo1" -eq "1" ];then
+				none=0
+				else
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$JJJ	# Номер страницы
+		DD=$JJJ	# Название страницы
+		EE=$JJJ	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=5		# ссылка указывающая на следующий блок страниц
+		links_sheme
+				fi
+	fi 
+fi
+
+
+if [ "$num_page" -le "$current_max" ]; then
+	if [ "$debug_mode" -eq "1" ];then
+	echo ${green}'num_page='$num_page' current_max='$current_max'</a>'${endColor}
+	fi
+	
+	if [ "$tmp" -eq "0" ]; then  
+	if [ "$debug_mode" -eq "1" ];then
+	echo ${blue}'tmp='$tmp'  n='$n''${endColor}
+	fi
+	
+			if [ "$only_for_algo1" -eq "1" ];then
+			quant=$n
+			let quant++
+			
+			if [ "$key" -eq "0" ];then
+			zeon=0
+			let zeon=pob_max+1		#  указатель на первую страницу следующего блока
+	while [ "$quant" -le "$num_page" ];do
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$quant	# Номер страницы
+		DD=$quant	# Название страницы
+		EE=$quant	# Альтернативное имя страницы
+		FF=$quant	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=1	# простая ссылка
+		links_sheme
+	let quant++
+	done
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$zeon	# Номер страницы
+		DD=$zeon	# Название страницы
+		EE=$zeon	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=5	# простая ссылка
+		links_sheme
+	else
+	while [ "$quant" -le "$num_page" ];do
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$quant	# Номер страницы
+		DD=$quant	# Название страницы
+		EE=$quant	# Альтернативное имя страницы
+		FF=$quant	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=1	# простая ссылка
+		links_sheme
+	let quant++
+	done
+	fi
+
+			else
+				while [ "$j" -lt "$num_page" ];do
+				CC=$j	# Номер страницы
+				DD=$j	# Название страницы
+				EE=$j	# Альтернативное имя страницы
+				FF=$j	# Ссылка:  графический элемент / текст / номер / символ
+				sheme=1	# простая ссылка
+				links_sheme
+	let j++
+	done
+	fi
+	else
+	let j--
+	JJJ=$j  
+	
+				if [ "$only_for_algo1" -eq "1" ];then
+				none=0
+												if [ "$key" -eq "0" ];then
+						AA=$rubrick_name_title	# директория
+						BB=$rubrick_name_title	# название
+						CC=$JJJ	# Номер страницы
+						DD=$JJJ	# Название страницы
+						EE=$JJJ	# Альтернативное имя страницы
+						FF=0	# Ссылка:  графический элемент / текст / номер / символ
+						sheme=5		# ссылка указывающая на следующий блок страниц
+						links_sheme
+				fi
+				else
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$JJJ	# Номер страницы
+		DD=$JJJ	# Название страницы
+		EE=$JJJ	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=5		# ссылка указывающая на следующий блок страниц
+		links_sheme
+				fi
+	fi
+fi
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+	 	CC=0	# Номер страницы
+		DD=0	# Название страницы
+		EE=0	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=3	# конец ссылок и подпись Темы
+		links_sheme
+}
+
+load_settings (){
+k=1
+safe_x=1		
+rubrick_number=$r1
+n=$n1
+#echo "Настройки загружаем..."
+#rubrick_number=$(ls attach| cut -f 1 -d :|sort -n| uniq|wc -l)  # предположим что мы получили количество рубрик.
+rubrick_number_strong=$(ls rubrick| cut -f 1 -d :|sort -n| uniq|wc -l) # проверяем директорию с настройками  рубрик
+num_page=$(ls attach|grep $rubrick_number'r:'| cut -f 2 -d :|sort -n| uniq|wc -l)	# Определили количество уникальных страниц рубрики
+#echo "Makelink число уникальных страниц рубрики...$num_page"
+
+#
+#В это количество могут входить как разные числа элементов, так и разные страницы. 
+		
+			#
+			#	Здесь нужно определить сколько страниц упоминается в рубрике:
+			#	1) Определяем сколько УНИКАЛЬНЫХ страниц в рубрике
+			#	2) Определяем сколько элементов на каждой странице
+#number=1
+
+#while [ "$number" -le "$rubrick_number" ]; do	# цикл повторяется пока не кончится кол-во рубрик: число меньше или равно
+		
+	rubrick_name_title=$(ls rubrick |grep $rubrick_number'r:'|awk -Fr: '{print $2}'|awk -F. '{print $1}')	
+	# узнаем имя файла
+	rubrick_name=$(ls rubrick |grep $rubrick_number'r:'|cut -f 2 -d :)	
+	#echo "[662]"
+	# блоков в рубрике
+	#blocks_on_rubrick=$(cat $rubrick_name|sed '/^#/d'| sed '/^$/d'|grep blocks_on_rubrick| sed s'/blocks_on_rubrick=/\n/'| sed '/^$/d') 
+	rubrick_name_short=$(ls rubrick |awk -Fr: '/'$rubrick_number'r:/{print $2}'|awk -F. '{print $1}')
+ 	compile_pages=$(ls $rubrick_name_short|tr '\t' '\n'|sed '/^links/d'|wc -l)  # проверяем рубрику на лишние собранные страницы
+if [ "$compile_pages" -ne "$num_page" ]; then
+#echo "$compile_pages != $num_page"
+
+#echo "В директории $rubrick_name_short есть лишние страницы:"
+wrong_pages=$(ls $rubrick_name_short|tr '\t' '\n'| sed '/^links/d')
+wrong_pages=$(printf "$wrong_pages"| sed s'/'$rubrick_name_short$num_page'.html/'$rubrick_name_short$num_page'.html\n/g')
+wrong_pages=$(printf "$wrong_pages"| sed '1,/^$/d'|sed '/^$/d')
+#sed s'/'$rubrick_name_short$num_page'.html/'$rubrick_name_short$num_page'.html\n\n/g'    | sed '/^links/d'   |sed '1,/^'$rubrick_name_short$num_page'/d'
+#printf "$wrong_pages\n"
+for files in $wrong_pages
+do
+rm $rubrick_name_short'/'$files
+done
+#printf "строка 1\nстрока 2\n\n\nстрока 3\nстрока 4"|sed '1,/^$/d'|sed '/^$/d'
+fi
+	# максимум страниц в блоке		
+	pob_max=$(cat rubrick/$rubrick_number'r:'$rubrick_name|sed '/^#/d'| sed '/^$/d'|grep pob_max| sed s'/pob_max=/\n/'| sed '/^$/d')
+	
+	
+	# максимум элементов на странице
+	element_max=$(cat rubrick/$rubrick_number'r:'$rubrick_name|sed '/^#/d'| sed '/^$/d'|grep element_max| sed s'/element_max=/\n/'| sed '/^$/d') 
+	if [ "$debug_mode" -eq "1" ];then
+	printf "num_page=$num_page  rubrick_name_title=$rubrick_name_title  rubrick_name=$rubrick_name  pob_max=$pob_max  element_max=$element_max\n"
+	fi
+	tmp=1
+
+	# Если n меньше или равно известному числу страниц num_page то:
+	# Нужно найти ближайший максимум для пере-генерации ссылок только в последнем блоке страниц
+	#
+if [ -z "$n" ];then
+printf "ERROR: input n must be great than 0\n"
+exit 1
+else
+
+	if [ "$n" -gt "$num_page" ];then
+printf "ERROR: input n > num_page ($n > $num_page), for $rubrick_namerezult of calculating attach files\n"
+exit 1
+else
+	
+		if [ "$n" -gt "1" ];then
+			x=$(echo "scale=3; $n / $pob_max" | bc|cut -f 2 -d .) # определяем кратность
+			if [ "$x" == "000" ];then
+			safe_x=$n
+			else
+			leather=$n
+			while [ "$x" != "000" ];do
+			let leather--
+			x=$(echo "scale=3; $leather / $pob_max" | bc|cut -f 2 -d .) # определяем до тех пор, пока не станет кратным
+			if [ "$leather" -lt "$pob_max" ];then n=1; break; fi
+			done
+			fi
+		fi
+	fi
+fi
+}
+algo3 (){
+	#  если страница начинается с любого номера, кроме 1
+	if [ "$n" -ne "1" -a "$num_page" -gt "$pob_max" -a "$n" -le "$pob_max" ];then 	
+	# n != 1	и	кол-во_страниц > страниц_в_блоке	и 	n <= страниц_в_блоке
+ if [ "$debug_mode" -eq "1" ];then
+ printf "Algo[4], часть 1,  стр..$n\n"
+ fi
+	previospage=$(let previospage=n-1; printf "$previospage")
+	pob=$pob_max # если число страниц меньше текущего максимума
+				
+i=1
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$tmp	# Номер страницы
+		DD=$tmp	# Название страницы
+		EE=$tmp	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=7
+		links_sheme
+		
+		before_links1
+
+		after_links1
+
+i=0  # обнуляем счетчик
+fi
+}
+algo2 (){
+if [ "$num_page" -gt "$pob_max" -a "$n" -gt "$pob_max" ];then pob=$pob_max; # если число страниц больше максимума,
+	
+	if [ "$debug_mode" -eq "1" ];then
+	printf "Algo[3],  n=$n\n"	
+	fi
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$tmp	# Номер страницы
+		DD=$tmp	# Название страницы
+		EE=$tmp	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=7
+		links_sheme
+
+x=$(echo "scale=3; $n / $pob" | bc|cut -f 2 -d .) # определяем кратность
+
+if [ "$x" == "000" ];then 
+tmp=1 # tmp - это ключ для активации предыдущей ссылки на страницах с целым делением.
+Z=$(echo "$current_max - $pob" | bc)
+safe_x=$n
+else
+tmp=0
+fi  
+
+current_max_checker
+j=$(echo "$current_max - $pob" | bc)
+
+before_links2
+
+after_links2
+
+fi # если число страниц больше максимума	
+}
+
+algo1 (){
+	if [ "$debug_mode" -eq "1" ];then
+	echo ${cyan}'Algo[1] num_page('$num_page') <= pob_max('$pob_max') и n('$n') <= pob_max('$pob_max')\n'${endColor}'\n'
+	fi
+	
+if [ "$num_page" -le "$pob_max" -a "$n" -le "$pob_max" ];then pob=$num_page; # если число страниц больше максимума,
+	if [ "$debug_mode" -eq "1" ];then
+	printf "Algo[1],  n=$n\n"
+	fi								    # и текущая страница больше максимума например n=89
+		AA=$rubrick_name_title	# директория
+		BB=$rubrick_name_title	# название
+		CC=$tmp	# Номер страницы
+		DD=$tmp	# Название страницы
+		EE=$tmp	# Альтернативное имя страницы
+		FF=0	# Ссылка:  графический элемент / текст / номер / символ
+		sheme=7	# Нижний переключатель страниц
+		links_sheme
+
+x=$(echo "scale=3; $n / $pob" | bc|cut -f 2 -d .) # определяем кратность
+
+if [ "$x" == "000" ];then 
+tmp=1 # tmp - это ключ для активации предыдущей ссылки на страницах с целым делением.
+Z=$(echo "$current_max - $pob" | bc)
+safe_x=$n
+#echo ${cyan}'Algo[1] safe_x('$safe_x') Z('$Z')\n'${endColor}'\n'
+else
+tmp=0
+fi  
+
+only_for_algo1=1
+current_max_checker
+j=$(echo "$current_max - $pob" | bc)
+
+
+
+before_links2
+
+after_links2
+
+only_for_algo1=0
+
+fi # если число страниц больше максимума	
+}
+
+
+
+#	Первая часть линковщика:
+
+
+load_settings
+key=0
+
+if [ "$debug_mode" -eq "1" ];then
+echo  ${red}"Начало работы генерации линковки\n"${endColor}
+fi
+
+while [ "$n" -le "$num_page" ];do # если число повторов меньше или равно количеству страниц
+
+if [ "$debug_mode" -eq "1" ];then
+printf "\n==Страница номер - $n== "
+fi
+	A="./$rubrick_name_title/"			# Корень генерации документов
+	B="./$rubrick_name_title/"			# Корень генерации документов + имя рубрики
+	C="./$rubrick_name_title/links/"	# Директория генерации ссылок
+		
+		check_dir
+		
+		A=$(echo $rubrick_name_title'/links/'$rubrick_number'r:'$n'p:link')
+		#echo  "line693  $A"
+		check_file
+
+		current_max_checker
+		
+		#sheme=6
+		
+		#link_file=$(echo $rubrick_name_title'/links/'$rubrick_number'r:'$n'p:link')
+		#printf '\n' > $link_file		# Запись в файл символа (создает новый или пустой файл)
+		
+		links_sheme
+		
+if [ "$num_page" -gt "$pob_max" -a "$key" -eq "0" ];then
+podmena=$num_page
+num_page=$pob_max
+algo1
+key=1
+num_page=$podmena
+else
+key=1
+algo1
+fi
+
+algo2 ## --- обязательно
+
+algo3
+
+sed -i '/^$/d' $link_file
+		
+let n++	
+
+done
+
+
+
+echo "make link...ok"
+exit 0

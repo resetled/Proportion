@@ -1,0 +1,149 @@
+#!/bin/bash
+# Пояснение
+
+if [ -f "rssconfig" ];then
+xml_version=$(awk -F= '/xml_version=/{print $2}'< rssconfig) 
+  rss_version=$(awk -F= '/rss_version=/{print $2}'< rssconfig)
+	 encoding=$(awk -F= '/encoding=/{print $2}'< rssconfig)
+		 host=$(awk -F= '/host=/{print $2}'< rssconfig)
+		title=$(awk -F= '/title=/{print $2}'< rssconfig)
+		 link=$(awk -F= '/link=/{print $2}'< rssconfig)
+  description=$(awk -F= '/description=/{print $2}'< rssconfig) 
+     language=$(awk -F= '/language=/{print $2}'< rssconfig) 
+    copyright=$(awk -F= '/copyright=/{print $2}'< rssconfig) 
+	   author=$(awk -F= '/author=/{print $2}'< rssconfig) 
+	   if [ -z "$xml_version" -o -z "$rss_version" -o -z "$encoding" -o -z "$host" -o -z "$title" -o -z "$link" -o -z "$description" -o -z "$language" -o -z "$copyright" -o -z "$author" ];then
+	   echo "Ошибка RSS: rssconfig заполнен не правильно или не полностью. Отмена создания ленты..."
+	   exit 1
+	   fi
+else
+echo "new_posted=0" > news_container
+printf "generate_rss_after_N_material_add=3\nxml_version=1.0\nrss_version=2.0\nencoding=UTF-8\nhost=http://www.ru/rus/index.php\ntitle=Сайт\nlink=http://www.ru/rus/index.php\ndescription=Сайт\nlanguage=ru-ru\ncopyright=©сайт\nauthor=автор" > rssconfig
+
+xml_version="1.0"
+rss_version="2.0"
+encoding="UTF-8"
+host="http://www.ru/rus/index.php"
+title="Сайт"
+link="http://www.ru/rus/index.php"
+description="Сайт"
+language="ru-ru"
+copyright="©сайт"
+author="автор"
+fi
+
+rss_config=$(awk -F= '/generate_rss_after_N_material_add=/{print $2}'< rssconfig)
+
+	if [ ! -f "news_container" ];then
+	echo "new_posted=0" > news_container
+	new_posted=0
+	fi
+	
+new_posted=$(awk -F= '/new_posted=/{print $2}'< news_container)
+
+	if [ -z "$new_posted" ];then
+	echo "new_posted=0" > news_container
+	new_posted=0
+	fi
+	
+if [ "$new_posted" -ne "$rss_config" -a "$new_posted" -lt "$rss_config" ];then
+	old1=$new_posted
+	let new_posted++
+	new1=$new_posted
+	echo "new_posted=$new_posted" > news_container
+	else
+	#-----------------------------------------------------------------
+
+echo '<?xml version="'$xml_version'" encoding="'$encoding'"?>
+<rss version="'$rss_version'">
+<channel>
+<title>'$title'</title>
+<link>'$link'</link>
+<description>'$description'</description>
+<language>'$language'</language>
+<copyright>'$copyright'</copyright>
+<author>'$author'</author>' > rss.xml
+
+
+#<item>
+#<title> Название </title>
+#<link>  прямая ссылка на новость <link>
+#<description>  фрагмент теста </description>
+#</item>
+
+
+#for file in `ls -t attach | grep :attach | head -n3`
+for file in `ls -t attach| grep :attach | head -n 3`
+do
+#tmp=$(cat file|sed s'/<div id="name_blog_content">//')
+txtfile=$(echo $file|grep .txt)
+if [ -n "$txtfile" ];then
+	name_material=$(echo $file|awk -F: '{print $4}')
+	
+	
+			real_num=$(cat text/$name_material | wc -m)
+			without_symbol=$(echo $name_material|tr '_' ' '|awk -F. '{print $1}')
+			short_element=$(cat text/$name_material | sed s'/¶/\n/g'| head -n 5)
+			#echo "[line 37] $short_element"	
+			plain_text=$(echo $short_element'<!-- -->')	
+			#echo  "$plain_text"								
+			plain_text=$(echo $plain_text| sed -e :a -e 's/<[^>]*>//g;/</N;//ba')
+			#echo  "$plain_text"
+			rubrick_mat=$(echo $file|awk -Fr: '{print $1}')
+			page_mat=$(echo $file|awk -Fp: '{print $1}'|awk -Fr: '{print $2}')
+			rubrick_name=$(ls rubrick|awk -Fr: '/'$rubrick_mat'r:/{print $2}'|awk -F.data '{print $1}')
+			attach_id=$(echo $file|awk -F: '{print $6}')
+			#echo "attach_id=$attach_id"
+			#echo "rubrick=$rubrick_mat"
+			#echo "page=$page_mat"
+			echo '<item><title>'$without_symbol'</title>
+			<link>'$host'/'$rubrick_name'/'$rubrick_name$page_mat'.html#post'$attach_id'</link>
+			<description>'$plain_text'</description>
+			</item>'>> rss.xml
+fi
+imgfile=$(echo $file|grep .jpg)
+imgfile2=$(echo $file|grep .png)
+imgfile3=$(echo $file|grep .gif)
+
+if [ -n "$imgfile" -o -n "$imgfile2" -o -n "$imgfile3" ];then
+	name_material=$(echo $file|awk -F: '{print $4}')
+	echo "$name_material"
+	
+			#real_num=$(cat text/$name_material | wc -m)	# количество символов
+			without_symbol=$(echo $name_material|tr '_' ' ')
+			#short_element=$(cat text/$name_material | tr '¶' '\n' | sed 5q)
+			content_img=$(cat attach/$file)									
+			#plain_text=$(echo $short_element| sed -e :a -e 's/<[^>]*>//g;/</N;//ba')
+			rubrick_mat=$(echo $file|awk -Fr: '{print $1}')
+			page_mat=$(echo $file|awk -Fp: '{print $1}'|awk -Fr: '{print $2}')
+			rubrick_name=$(ls rubrick|awk -Fr: '/'$rubrick_mat'r:/{print $2}'|awk -F.data '{print $1}')
+			attach_id=$(echo $file|awk -F: '{print $6}')
+			#echo "attach_id=$attach_id"
+			#echo "rubrick=$rubrick_mat"
+			#echo "page=$page_mat"
+			echo '<item><title>'$without_symbol'</title><link>'$host'/'$rubrick_name'/'$rubrick_name$page_mat'.html#post'$attach_id'</link><description><![CDATA['$content_img']]></description></item>'>> rss.xml
+fi
+mp3file=$(echo $file|grep .mp3)
+if [ -n "$mp3file" ];then
+	name_material=$(echo $file|awk -F: '{print $4}')
+	echo "$name_material"
+	
+			#real_num=$(cat text/$name_material | wc -m)	# количество символов
+			without_symbol=$(echo $name_material|tr '_' ' ')
+			#short_element=$(cat text/$name_material | tr '¶' '\n' | sed 5q)
+			content_img=$(cat attach/$file)									
+			#plain_text=$(echo $short_element| sed -e :a -e 's/<[^>]*>//g;/</N;//ba')
+			rubrick_mat=$(echo $file|awk -Fr: '{print $1}')
+			page_mat=$(echo $file|awk -Fp: '{print $1}'|awk -Fr: '{print $2}')
+			rubrick_name=$(ls rubrick|awk -Fr: '/'$rubrick_mat'r:/{print $2}'|awk -F.data '{print $1}')
+			attach_id=$(echo $file|awk -F: '{print $6}')
+			#echo "attach_id=$attach_id"
+			#echo "rubrick=$rubrick_mat"
+			#echo "page=$page_mat"
+			echo '<item><title>'$without_symbol'</title><link>'$host'/'$rubrick_name'/'$rubrick_name$page_mat'.html#post'$attach_id'</link><description><![CDATA['$content_img']]></description></item>'>> rss.xml
+fi
+#тут пошёл рсс
+
+done 
+echo "</channel></rss>" >> rss.xml
+fi

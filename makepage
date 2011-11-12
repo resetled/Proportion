@@ -1,0 +1,349 @@
+#!/bin/bash
+# makepages  -	 создает страницы из фрагментов склеивая их по шаблону.
+file=0
+ rubrick_number=$1	# номер рубрики
+ page_number=$2		# колво страниц принимаемых на вводе - это ближайший в меньшую сторону максимум страниц.
+ #echo "rubrick_number=$rubrick_number; page_number=$page_number"
+#rubrick_number="2"	# номер рубрики
+#page_number="1"		# колво страниц принимаемых на вводе - это ближайший в меньшую сторону максимум страниц.
+
+
+
+#template=$3			# шаблон на основе которого будут генерироваться страницы
+#n=$page_number		# Приравниваем счетчик повторов к количеству полученный страниц. По идее алгоритм повторится только один раз,
+					# при этом обработается только последняя страница.
+#	page_number=1
+	last_name_rubrick=$(ls rubrick| grep $rubrick_number'r:')
+	#echo "+++$last_name_rubrick"
+	if [ -z "$last_name_rubrick" ]; then
+	echo "Номер рубрики пустой (makepage: ls rubrick| grep 'some_number'r:). Завершение работы"
+	exit 1
+	fi 
+	templateX=$(awk -F= '/template=/{print $2}'< rubrick/$last_name_rubrick)
+	if [ -z "$templateX" ]; then
+	echo "В файле настройки рубрики нет строки: template=/путь_до_файла/шаблона.  Завершение работы"
+	exit 1
+	fi 
+	#echo "---$templateX"			
+#template=$HOME/proportion/template/template1.html
+
+ls attach|tr '\t' '\n'> attach_tmp		#  так как запрос в первой половине выражения выполняется 4 раза  - то возможно результат запроса можно поместить в переменную
+										#	и использовать уже ее, вместо ресурсоемких запросов к файлу или к директории
+ls rubrick|tr '\t' '\n'> rubrick_tmp
+
+load_template_func(){
+	printf '\n' > $html_out		# записываем перевод строки в начало, предварительно очистив файл
+	
+	last_added=0
+	while read line
+do
+#echo '[START] line = '$line
+#---------------------Заголовок_страницы---------------------
+#echo "$line" > /dev/null	# сколько раз встречается метка в строке
+if [ "$line" == "<!--Заголовок_страницы-->" ];then
+echo $rubrick_name_title >> $html_out
+#-----#
+let title_checker++
+fi
+
+if [ "$title_checker" -gt "1" ];then 
+echo 'Error: tag <!--Заголовок_страницы--> found great than 1:'$readline'. Only 1 <!--Заголовок_страницы--> must be.'
+error_template=1
+exit 1
+fi
+
+#---------------------Контент-----------------------------------
+#echo "$line"|grep '<!--Контент-->' > /dev/null	# сколько раз встречается метка в строке
+if [ "$line" == "<!--Контент-->" ];then
+#if [ "$line" == "<!--Контент-->" ];then
+
+		files_to_attach=$(grep :group: < attach_tmp|awk -F:group: '{print $2}')
+		#files_to_attach=$(echo $files_to_attach|tr ',' '\n') #> files2attach
+		printf "$files_to_attach\n" > already_attached
+
+
+for e in `seq  1 $curr_pelem_max|tac` #
+do
+#load_attach
+	loader=$(grep $rubrick_number'r:'$page_number'p:'$e'e:'< attach_tmp)	# грепаем из файла только потому, что не знаем заранее всех имен файлов после значения элемента e:<имя>
+tmp_2=$loader
+	attached_files=$(grep $rubrick_number'r:'$page_number'p:'$e'e:'< attach_tmp|awk -F: '{print $7}')
+	#echo "$new_content"
+	if [ -n "$attached_files" ];then 
+		files_to_attach=$(grep $rubrick_number'r:'$page_number'p:'$e'e:'< attach_tmp|awk -F: '{print $8}')
+		files_to_attach=$(echo $files_to_attach|tr ',' '\n') #> files2attach
+#		
+#		printf "$files_to_attach\n" >> already_attached
+		
+		#tmp_1=$()
+		cat attach/"$loader"|sed s'/> </> \n</g' >> $html_out
+		
+			
+		for input in $files_to_attach
+		do
+		loader=$(grep 'attachID:'$input < attach_tmp)  
+		if [ -z "$loader" ];then	# случай, когда удален элемент входящий в группу - его нужно исключить из группы
+		echo "файла в группе нет, либо ошибка. очистка группы"
+		attached_extension=$(echo $tmp_2|awk -F:group: '{print $2}'|sed s'/,'$input'//'|sed s'/'$input'//'|tr ",,," ","|tr ",," ","|sed 's/[,]*$//') #tr ",$input" " "|tr "$input" " "|tr ",,," ","|tr ",," ","
+
+		#echo "valid:  $attached_extension"
+		detached_name=$(echo $tmp_2|awk -F:group: '{print $1}')
+		
+				if [ -z "$attached_extension" ];then
+					#echo "cutted $detached_name"
+					mv attach/$tmp_2 attach/$detached_name
+				else
+					#echo 'added  '$detached_name':group:'$attached_extension
+					mv attach/$tmp_2 attach/$detached_name':group:'$attached_extension
+				fi
+		
+		#mv tmp_2
+		else   # случай, когда в группе есть элементы
+		
+		#echo "makepage присоеденил элемент $loader"
+		cat attach/"$loader"|sed s'/> </> \n</g' >> $html_out
+		#echo "string 81"
+		fi
+		done
+	else	# все остальные элементы на странице
+
+
+if [ -f "already_attached" ];then
+current=$(echo $loader|awk -F: '{print $6}')
+reduce=$(cat already_attached| grep $current)
+#printf "$reduce_repeat\n"
+
+if [ -z "$reduce" ];then
+
+echo "текущий файл $current  - добавлен"
+cat attach/"$loader"|sed s'/> </> \n</g' >> $html_out
+
+fi 
+
+else
+
+echo "текущий файл $loader добавлен - так как нет файла групп"
+cat attach/"$loader"|sed s'/> </> \n</g' >> $html_out
+
+
+fi
+	
+	fi
+
+done
+	#rm already_attached
+		e=1		# ВАЖНО: сброс счетчика элементов
+ # добавляем в массив все контент-элементы для страницы
+		let content_checker++
+fi
+
+if [ "$content_checker" -gt "1" ];then 
+error_template=1
+echo 'Error: tag <!--Контент--> found great than 1 in template:'$readline'. Only 1 <!--Контент--> tag must be in template.'
+exit 1
+fi
+#---------------------Контент_Новое---------------------
+#echo "$line"|grep '<!--Контент_Новое-->' > /dev/null	# сколько раз встречается метка в строке
+if [ "$line" == "<!--Контент_Новое-->" ];then
+		if [ "$start_checker" -eq "1" ];then #-----#
+		#out_buffer=( "${out_buffer[@]}" `cat last_image/last_image|sed s'/<img id="image_g" src=".\/res\/none.gif">/\n/'|sed s'/<div>/<div id="radius-thumb">/'`)
+				cat last_image/last_image|sed s'/<img id="image_g" src=".\/res\/none.gif">/\n/'|sed s'/<div>/<div id="radius-thumb">/'|sed s'/> </> \n</g' >> $html_out
+				else
+				####строка для превью новостей####	echo '<div id="radius2"><a href="./index.html" title="Новости"><img style="border: 0px;float: right; margin: 5px 0px 0px 5px;" src="./res/gohome.png" height="13px" width="13px"></a></div>'|sed s'/> </> \n</g' >> $html_out	
+				:
+		fi
+let content_checker2++
+fi
+
+if [ "$content_checker2" -gt "1" ];then 
+error_template=1
+echo 'Error: tag <!--Контент--> found great than 1 in template:'$readline'. Only 1 <!--Контент--> tag must be in template.'
+exit 1
+fi
+#---------------
+#readline=$(echo "$line"|grep '<!--Условный:если_это_стартовая-->'|wc -l)
+#if [ "$readline" -eq "1" ];then 
+#		if [ "$start_checker" -eq "1" ];then
+#out_buffer=( "${out_buffer[@]}" `echo '<div id="radius-thumb">'`)
+#		else
+##out_buffer=( "${out_buffer[@]}" `echo '<div>'`)	
+#		fi
+#fi
+
+#---------------
+#---------------------Название_рубрики-------------------
+#echo "$line"|grep '<!--Название_рубрики(страницы)-->' > /dev/null	# сколько раз встречается метка в строке
+if [ "$line" == "<!--Название_рубрики(страницы)-->" ];then
+#-----#
+echo $rubrick_name_title >> $html_out
+fi
+#---------------------Переключатель_страниц--------------
+#echo "$line"|grep '<!--Переключатель_страниц-->' > /dev/null	# сколько раз встречается метка в строке
+if [ "$line" == "<!--Переключатель_страниц-->" ];then		#if [ "$readline" -eq "1" ];then 
+#load_link
+##new_link=$(cat httpdocs/links/$rubrick_number'r:'$page_number'p:link')
+#buff=$(echo $new_link)
+#out_buffer=( "${out_buffer[@]}" `echo $buff`)
+#-----#
+#echo "[load_template_func 111]"
+cat $rubrick_name_title/links/$rubrick_number'r:'$page_number'p:link'|sed s'/> </> \n</g' >> $html_out
+#echo "[load_template_func 113]"
+fi
+#---------------------Весь остальной текст шаблона---------------
+if [ "$line" != "<!--Переключатель_страниц-->" -a "$line" != "<!--Название_рубрики(страницы)-->" -a  "$line" != "<!--Контент_Новое-->" -a "$line" != "<!--Контент-->" -a "$line" != "<!--Заголовок_страницы-->" ];then
+#if [ "$readline" -eq "0" ];then
+#-----#if[ "$?" -eq "0" ];then
+#-----#readline=$(echo "$line"|sed '/<!--Заголовок_страницы-->/d')
+#-----#readline=$(echo "$readline"|sed '/<!--Переключатель_страниц-->/d')
+#-----#readline=$(echo "$readline"|sed '/<!--Название_рубрики(страницы)-->/d')
+#-----#readline=$(echo "$readline"|sed '/<!--Условный:если_это_стартовая-->/d')
+#-----#readline=$(echo "$readline"|sed '/<!--Условный:close_tag-->/d')
+#-----#readline=$(echo "$readline"|sed '/<!--Контент_Новое-->/d')
+#-----#readline=$(echo "$readline"|sed '/<!--Контент-->/d')
+#-----#
+echo $line|sed s'/> </> \n</g' >> $html_out
+null_print=0
+fi
+#--------------------------------------------------------------------------
+
+done<`echo $templateX`
+}
+current_number=0	# количество произведенных операций
+pages=0
+error=0
+error2=0
+finder=0
+start_checker=0		# Определяет - по какому шаблону генерировать страницы: 
+					#	0 - обычная страница, 
+					#	1 - стартовая страница с превью картинкой самой новой работы
+
+debug_mode=0
+
+check_dir () {
+		
+if [ ! -d "$A" ]; then mkdir $A;fi
+if [ ! -d "$B" ]; then mkdir $B;fi
+
+}
+
+
+load_settings (){
+#	echo " мэйкпейдж...$rubrick_number"
+k=1
+safe_x=1
+#rubrick_name_title=$(grep $rubrick_number'r:'< rubrick_tmp|cut -f 2 -d :|sed s'/.data/\n/'|sed '/^$/d')
+rubrick_name_title=$(awk -F: '/'$rubrick_number'r:''/{print $2}'< rubrick_tmp|awk -F. '{print $1}') #
+#rubrick_name=$(grep $rubrick_number'r:'< rubrick_tmp|cut -f 2 -d :)	
+rubrick_name=$(awk -F: '/'$rubrick_number'r:''/{print $2}'< rubrick_tmp)	
+#rubrick_number=$(ls attach| cut -f 1 -d :|sort -n| uniq|wc -l)  # предположим что мы получили количество рубрик.
+rubrick_number_strong=$(ls rubrick|cut -f 1 -d : |sort -n| uniq|wc -l) # проверяем директорию с настройками  рубрик
+num_page=$(grep $rubrick_number'r:'< attach_tmp| cut -f 2 -d :|sort -n| uniq|wc -l)	# Определили количество уникальных страниц рубрики
+#echo "[1]rubrick_name_title=$rubrick_name_title"
+#echo "[2]rubrick_name=$rubrick_name"
+#echo "[3]rubrick_number_strong=$rubrick_number_strong"
+#echo "[4]num_page=$num_page"
+#echo 'Метка 1:  '`cat rubrick_tmp`' | rubrick_name:'$rubrick_name
+#---#num_page_strong=$(cat rubrick/$rubrick_number'r:'$rubrick_name|sed '/^#/d'| sed '/^$/d'|grep page_number| sed s'/page_number=/\n/'| sed '/^$/d')
+#echo "[load_settings 167]"
+num_page_strong=$(cat rubrick/$rubrick_number'r:'$rubrick_name|awk -F= '/page_number=/{print $2}')
+#echo "[5]num_page_strong=$num_page_strong"
+#echo "[load_settings 169]"
+#echo "Метка 2"
+#echo "num_page=$num_page   num_page_strong=$num_page_strong"
+#echo " или здесь..."
+#
+#	 Важное примечание: 
+#
+#		Так как мы импортируем номер страницы с которой начнем создавать оригиналы страниц - то нам просто необходимо узнать
+#	 	до какой страницы мы будем собирать оригиналы. Для этого мы считаем количество страниц в папке attach
+#		а так же прочитали его из конфига рубрики. Казалось бы зачем так? ведь можно импортнуть только из конфига..
+#		Дело в том, что генерация страниц самый ответственный участок. Нам нужно подстраховаться на тот случай, если
+#		у нас в директории attach -  нет файлов на склейку.
+
+	#rubrick_name_title=$(awk '/'$rubrick_number'r:''/{print $2}'< rubrick_tmp|awk -F. '{print $1}'|awk -F: '{print $2}') #	
+	# узнаем имя файла
+	#rubrick_name=$(awk '/'$rubrick_number'r:''/{print $2}'< rubrick_tmp|awk -F: '{print $2}')
+
+	# максимум элементов на странице  element_max=
+	#echo "[load_settings 201]"
+	element_max=$(cat rubrick/$rubrick_number'r:'$rubrick_name|awk -F= '/element_max=/{print $2}') 
+	#echo "[load_settings 203]"
+	if [ "$debug_mode" -eq "1" ];then
+	printf "num_page=$num_page   rubrick_name_title=$rubrick_name_title  rubrick_name=$rubrick_name  element_max=$element_max\n"
+	fi
+	tmp=1
+
+	A=$(echo $rubrick_name_title)
+	B=$(echo $rubrick_name_title'/links/')
+}
+
+load_attach(){
+	#loader=$(echo `grep $rubrick_number'r:'$page_number'p:'$e'e:'< attach_tmp`)
+	#echo "rubrick_number=$rubrick_number"
+	#echo "page_number=$page_number"
+	#echo 'e number='$e
+	#loader=$(awk '/'$rubrick_number'r:'$page_number'p:'$e'e:/{print $2}'< rubrick_tmp)
+	loader=$(grep $rubrick_number'r:'$page_number'p:'$e'e:'< rubrick_tmp)
+	#echo "[load_attach 220]"
+	new_content=$(cat attach/$loader)
+	
+	attached_files=$(grep $rubrick_number'r:'$page_number'p:'$e'e:'< attach_tmp|awk -F: '{print $7}')
+	echo "$new_content"
+	if [ -n "$attached_files" ];then 
+		files_to_attach=$(grep $rubrick_number'r:'$page_number'p:'$e'e:'< attach_tmp|awk -F: '{print $8}')
+		echo "$files_to_attach" #> files2attach
+		
+		#tmp_1=$()
+	fi
+	#echo "[load_attach 222]"
+	#echo "loader=$loader"
+}
+
+load_link(){
+	#echo "[load_link 227]"
+	new_link=$(cat $rubrick_name_title/$rubrick_number'r:'$page_number'p:link')
+	#echo "[load_link 227]"
+}
+
+#echo "Загружаем настройки..."
+load_settings
+#echo "Удачно."
+check_dir
+n=1
+e=1
+#rubrick_name_title=$(grep $rubrick_number'r:'< rubrick_tmp|awk -F. '/data/{print $1}')
+title_checker=0
+content_checker=0
+content_checker2=0
+error_template=0
+#start_checker=0
+#------------------------------------------------------------------------------
+
+
+for n in `seq 1 $num_page`;do
+curr_pelem_max=$(grep $rubrick_number'r:'$page_number'p:'< attach_tmp| cut -f 3 -d :|sort -n| uniq|wc -l)
+#echo 'n = '$n', num_page = '$num_page' page_number = '$page_number
+#echo "num_page=$num_page"
+html_out=$(echo $rubrick_name_title'/'$rubrick_name_title$page_number'.html')
+load_template_func
+sed -i '/^$/d' $rubrick_name_title'/'$rubrick_name_title$page_number'.html'
+
+
+
+#-----#
+#echo ${out_buffer[*]}|sed s'/> </> \n</g' > $html_out   #
+#unset out_buffer
+
+let n++
+let page_number++
+if [ "$page_number" -gt "$num_page" ];then 
+break
+fi
+title_checker=0
+content_checker=0
+content_checker2=0
+
+done
+echo "makepage..ok"
+#------------------------------------------------------------------------------
+exit 0

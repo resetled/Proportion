@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd $HOME/proportion
+./makepage 1 1
+./makepage 2 1
+./makepage 3 1
+./makepage 4 1
+./makepage 5 1
+./makepage 8 1
+

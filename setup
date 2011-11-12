@@ -1,0 +1,537 @@
+#!/bin/bash
+# Автомат для управления материалами рубрик:
+error_rubrick=0
+options=0
+modify=0
+file_name=''
+tobreak=0
+options='-r'
+info=0
+info2=0
+AA=0
+if [ ! -d "last_image" ]; then mkdir last_image;fi
+if [ ! -f "last_image/last_image" ]; then touch last_image/last_image;fi
+
+
+command_only=$1  #  yes / no
+				 #   Написать порядок вводимых значений и что это за значения в командном режиме:
+				 #	 Предполагается написание еще одного скрипта стоящего над этим, который уже способен выполнять действия с короткой записью в виде ключей и названий. Для такого скрипта уже можно писать мануал по командам.
+				 #	Итак набор условных и безусловных команд для управления:
+				 
+				 #	1. Ожидается ввод номера меню
+				 #	2.  [вариант А] если (пункт1) == 2,  ожидается название элемента, номер рубрики, номер страницы. Далее выполняется удаление файла attach по маске: [номер_рубрики][номер_страницы][номер_элемента][название элемента]. Будет удален только один файл. Так как в памяти существует значение номера рубрики, страницы, элемента то, скрипт ищет в ТОЙ ЖЕ рубрике  - номер следующего элемента. Находит группу файлов, и изменяет им всем НОМЕР элемента на N-1; Цикл повторяется, пока не закончатся элементы на странице. То есть значение листинга по маске [№][№][N+1][назание элемента] будет равно 0. Затем выполняется скрипт makelink (если страница в приделах блока, то перелинковку следует выполнять с первой ближайшей минимальной страницы блока "предыдущий максимум") и следом makepages.
+				 #		[Б] если (пункт1) == 3, ожидается название элемента, затем выполняется sleeper для конкретного элемента.Затем выполняется скрипт makelink (если страница в приделах блока, то перелинковку следует выполнять с первой ближайшей минимальной страницы блока "предыдущий максимум") и следом makepages.
+				 #		[В] если (пункт1) == 4, ожидается название элемента, затем скрипту sleeper передается название элемента, и ключ - говорящий слиперу, что следующий элемент нужно начать с новой страницы, значение pob_max приравнивается к текущему значению страницы из настройки рубрики. Генерируется элемент, а значение pob_max - не записывается в конфиг рубрики (то есть не изменяется на самом деле)
+				 #		[Г] если (пункт1) == 5, ожидается номер рубрики и номер страницы. Далее выполняется удаление файлов attach по маске: [номер_рубрики][номер_страницы]. Все найденные файлы будут удалены. Так как в памяти существует значение номера рубрики и страницы, то, скрипт ищет в ТОЙ ЖЕ рубрике  - номер следующей страницы. Находит группу файлов, и изменяет им всем НОМЕР страницы на N-1; Цикл повторяется, пока не закончатся страницы в рубрике. То есть значение листинга по маске [№][N-1] будет равно 0. Затем выполняется скрипт makelink (если страница в приделах блока, то перелинковку следует выполнять с первой ближайшей минимальной страницы блока "предыдущий максимум") и следом makepages.
+				 #		[Д] если (пункт1) == 6, ожидается номер страницы, затем выполняется sleeper для всех элементов на странице. Затем выполняется скрипт makelink (если страница в приделах блока, то перелинковку следует выполнять с первой ближайшей минимальной страницы блока "предыдущий максимум") и следом makepages.
+				 #		[Е] если (пункт1) == 7,  то выполняется другой скрипт (редактор рубрик)
+				 #		[Ж] если (пункт1) == 8,	 то выполняется другой скрипт (редактор рубрик: ожидается номер рубрики, название рубрики.  При этом удаляем все attach файлы начинающиеся на номер рубрики, и все link файлы начинающиеся на тот же номер рубрики.)			
+				 #		[И] если (пункт1) == 9,  ожидается название рубрики, затем выполняется sleeper для всех элементов рубрики. Затем выполняется скрипт makelink для всех страниц рубрики и следом makepages.
+				 #		[К] если (пункт1) == 10, то Ожидается ввод - пунктов подменю
+				 #	---------- если (пункт2) == (от 1 до 6), то ожидается ввод текста в одну строку (значения умолчаний для директорий)
+				 #  -----------если (пункт2) == 7, то выполняется другой скрипт (редактор рубрик)
+				 #  -----------если (пункт2) == 8, то ожидается ввод текста в одну строку, значения yes / no (любое значение кроме no будет восприниматься как "prompt" режим)
+				 #
+check_dir () {
+		#printf "\nwork_dir=$work_dir\n"
+if [ ! -d "$AA" ]; then mkdir $AA;fi
+
+}
+backup_attach(){
+if [ ! -d "backup_attach" ]; then mkdir backup_attach;fi
+if [ ! -d "backup_attach" ]; then mkdir backup_rubrick;fi
+tar cf - attach | 7za a -si backup_attach/attach_`date -R|awk '{print $2"_"$3"_"$4"_"$5}'`.tar.7z
+tar cf - rubrick | 7za a -si backup_rubrick/rubrick_`date -R|awk '{print $2"_"$3"_"$4"_"$5}'`.tar.7z
+echo "12132"
+}
+execute_action(){
+	#echo 'Имя рубрики для sleeper='$full_name_rubrick', имя файла='$file_name', options='$options
+	full_name_rubrick=$(grep $namer < rubrick_tmp)
+	read info info2 <<< $(./sleeper $full_name_rubrick $file_name $type_element $options)
+	#read info2;do	# введите номер страницы в пределах от 1 до (значение из full_name_rubrick)
+	#info2=1
+	#echo $rubrick_number > last_mod_rubrick
+		#echo 'номер рубрики на экспорт='$info'  номер страницы на экспорт='$info2' <--'
+	#echo "Номер рубрики: $info|  Номер страницы: $info2|"
+	#time 
+	./makelink $rubrick_number $info2	#линковка -  номер рубрики, номер страницы
+	
+	
+	#time 
+	./makepage $rubrick_number $info2	#$info3 #генерация страниц - номер рубрики, номер страницы, шаблон страницы
+	
+	#	printf "[0]full_name_rubrick=$full_name_rubrick\nfile_name=$file_name\noptions=$options"
+	none=0
+	rm attach_tmp
+	rm rubrick_tmp
+	
+	./rss_gen
+
+	#sleep 1
+}
+relative_path_material(){
+if [ "$type_element" == "image" ]	# распространенные форматы изображений
+				then
+				src="./img/$file_name"
+				src_mod="./thumbs/!thmb-$file_name"
+
+fi
+if [ "$type_element" == "text" ]	# тексты, в том числе с HTML разметкой (разметка будет зависеть от форматирования внешнего элемента, поэтому лучше включать внутренний style="")
+				then
+				src="./text/$file_name"
+				src_mod="./text/nice/nice-$file_name"
+fi
+if [ "$type_element" == "music" ]	# или другие бинарники
+				then
+				src="./music/$file_name"
+				src_mod="./music/nice/nice-$file_name"
+fi
+}
+print_type_of_file(){
+echo "File type: $type_element"
+}
+material_extension_checker(){
+	
+				filename_short=$(basename $file_name)
+				extension=${filename_short##*.}
+				filename_short=${filename_short%.*}
+				
+				if [ "$extension" == "$filename_short" ]
+							then
+							extension="null"
+							type_element="text"
+							print_type_of_file
+				fi
+
+				if [ "$extension" == "jpg" -o "$extension" == "jpeg" -o "$extension" == "jpe" -o "$extension" == "gif" -o "$extension" == "png" -o "$extension" == "bmp" -o "$extension" == "svg" ]
+							then
+							type_element="image"
+							print_type_of_file
+							
+				fi
+
+				if [ "$extension" == "html" -o "$extension" == "htm" -o "$extension" == "txt" -o "$extension" == "null" ]
+							then
+							type_element="text"
+							print_type_of_file
+				fi
+				
+
+				if [ "$extension" == "mp3" -o "$extension" == "ogg" -o "$extension" == "arm" -o "$extension" == "wav" ]
+							then
+							type_element="music"
+							print_type_of_file
+				fi
+				
+				if [ "$extension" == "zip" -o "$extension" == "rar" -o "$extension" == "bz2" -o "$extension" == "7z" -o "$extension" == "part" -o "$extension" == "gz" ]
+							then
+							type_element="archive"
+							print_type_of_file
+				fi
+
+}
+check_name_of_file(){
+tmpfile=0	
+	
+if [ "$type_element" == "null" ]
+				then
+				if [ ! -f "./text/$file_name" ]; then tmpfile="0";else tmpfile="1";fi
+				
+fi
+if [ "$type_element" == "image" ]
+				then
+				if [ ! -f "./img/$file_name" ]; then tmpfile="0";else tmpfile="1";fi
+fi
+
+if [ "$type_element" == "text" ]
+				then
+				if [ ! -f "./text/$file_name" ]; then tmpfile="0";else tmpfile="1";fi
+fi				
+
+if [ "$type_element" == "music" ]
+				then
+				if [ ! -f "./music/$file_name" ]; then tmpfile="0";else tmpfile="1";fi
+fi
+if [ "$type_element" == "archive" ]
+				then
+				if [ ! -f "./archive/$file_name" ]; then tmpfile="0";else tmpfile="1";fi
+fi
+
+if [ "$tmpfile" == "0" ]
+				then
+				printf "Файл не найден! Введите имя файла\nsleeper:[file]>"
+fi
+if [ "$tmpfile" == "1" ]
+				then
+				tobreak=1 # файл найден
+fi
+}
+number_or_name(){
+
+true=$(ls rubrick| cut -f 1 -d :|sort -n| uniq|grep $name_rubrick|wc -l)  # найти по номеру
+if [ "$true" == "1" ];then 
+rubrick_number=$name_rubrick
+echo 'Рубрика найдена по номеру:'$rubrick_number
+name_num=$name_rubrick	# номер рубрики, не используется если командный режим
+namer=$(awk '/'$rubrick_number'r:''/{print $1}'< rubrick_tmp|awk -F: '{print $2}'|awk -F. '{print $1}')  # имя рубрики|awk -F: '{print $2}'
+#echo 'имя рубрики:'$namer
+full_name_rubrick=$(grep $namer < rubrick_tmp)
+#echo 'Полное имя рубрики:'$full_name_rubrick
+#	echo '[1]full_name_rubrick='$full_name_rubrick' namer='$namer
+tobreak=1
+else
+true=$(ls rubrick| cut -f 2 -d :|sort -n| uniq|grep $name_rubrick|wc -l)  # найти по части имени
+if [ "$true" == "1" ];then 
+echo 'Рубрика найдена по названию'
+
+#namer=$(awk '/'$rubrick_number'r:''/{print $2}'< rubrick_tmp|awk -F: '{print $2}')  # имя рубрики
+#		if [ "$command_only" == "YES" -o "$command_only" == "yes" ];then 
+#name_num=$(grep $name_rubrick < rubrick_tmp|sort -n| uniq|awk -F: '{print $1}')	# номер рубрики, не используется если командный режим
+#		fi
+#full_name_rubrick=$(grep $namer < rubrick_tmp)
+
+namer=$(ls rubrick |awk '/'$rubrick_number'r:''/{print $2}'|awk -F: '{print $2}')  # имя рубрики
+		if [ "$command_only" == "YES" -o "$command_only" == "yes" ];then 
+name_num=$(ls rubrick |grep $name_rubrick|sort -n| uniq|awk -F: '{print $1}')	# номер рубрики, не используется если командный режим
+		fi
+full_name_rubrick=$(ls rubrick |grep $namer)
+
+	echo '[2]full_name_rubrick='$full_name_rubrick' namer='$namer
+	
+	
+tobreak=1
+else 
+echo 'Внимание! Рубрика не найдена, проверьте наличие настроек в директории rubrick'
+tobreak=0
+echo 'Создать Новую рубрику? Да / нет(любой_символ)'
+read namer
+if [ "$namer" == "да" -o "$namer" == "Да" ];then 	# создать рубрику
+
+echo 'Введите имя рубрики: '
+read namer
+rubrick_N=$(ls attach| cut -f 1 -d :|sort -n| uniq|wc -l)
+
+let rubrick_N++									# Указываем номер следующей рубрики
+
+if [ ! -f "./rubrick/$rubrick_N':r'$namer'.data'" ]; then			# атавизм...
+#echo "error detected - no way"
+				touch ./rubrick/$rubrick_N':r'$namer'.data'
+				
+				work_dir="./"
+				img_dir="./img/"
+				thumbnail="./thumbs/"
+				music_dir="./music/"
+				text_dir="./text/"
+				template="./template/template1.html"
+				only_command="no"
+				absolut_path="-r"
+				
+				element_number=1	# номер следующего элемента
+				page_number=1		# номер текущей страницы
+				block_number=1		# номер текущего блока
+				rubric_number=1		# номер текущей рубрики
+				pob_number=1		# счетчик текущего кол-ва страниц в блоке
+				bor_number=1		# счетчик текущего кол-ва блоков
+				pob_max=5			# максимум страниц в блоке
+				element_max=16		# максимум элементов на странице
+				
+				AA=$namer 
+
+				check_dir
+				#touch ./rubrick/$rubrick_N':r'$namer'.data'
+				
+				printf "# Корень\nwork_dir=$work_dir\n#\n# Директория с изображениями\nimg_dir=$img_dir\n#\n# Директория с миниатюрами изображений\nthumbnail=$thumbnail\n#\n# Директория с звуковыми/музыкальными записями\nmusic_dir=$music_dir\n#\n# Директория с текстовыми файлами\ntext_dir=$text_dir\n#\n#\n# Файл шаблона страницы\ntemplate=$template\n#\n# Опция 'только командный режим'\n# no выключена, yes - включена\nonly_command=$only_command\n#\n# Опция 'относительный путь для ссылок'\n# -r относительный путь, -a абсолютный путь\nabsolut_path=$absolut_path\n#\n# Номер элемента\nelement_number=$element_number\n#\n# Номер страницы\npage_number=$page_number\n#\n# Номер блока\nblock_number=$block_number\n#\n# Номер рубрики\nrubric_number=$rubric_number\n#\n# Страниц в блоке\npob_number=$pob_number\n#\n# Блоков в рубрике\nbor_number=$bor_number\n#\n# Максимум страниц в блоке\npob_max=$pob_max\n#\n# Максимум элементов на странице\nelement_max=$element_max" > rubrick/$rubrick_N':r'$namer'.data'
+				echo 'Новая рубрика "'$namer'" была создана. Завершение... '
+				tobreak=0
+fi
+
+else
+echo 'Рубрика "'$namer'" уже существует. Завершение... '
+tobreak=0
+fi		# создать рубрику
+
+fi
+fi
+}
+delete_last_element(){
+last_file=$(cat last_mod_file)
+last_rubrick=$(cat last_mod_rubrick)
+#echo "rubrick/$last_rubrick"
+last_name_rubrick=$(ls rubrick| grep $last_rubrick)
+rm attach/$last_file
+#echo "rubrick/$last_name_rubrick"
+
+element_number=$(awk -F= '/element_number=/{print $2}'< rubrick/$last_name_rubrick)
+old=$element_number
+let element_number--
+new=$element_number
+sed -i s'/element_number='$old'/element_number='$new'/g' rubrick/$last_name_rubrick	
+			#------------------- счетчик материалов
+			id=$(cat last_material_id)
+			let id--
+			#-------------------
+			echo $id > last_material_id 
+posledniy_nomer_rub=$(echo $last_rubrick|awk -Fr: '{print $1}')
+echo "Удаляем из рубрики №$posledniy_nomer_rub"
+./makelink $posledniy_nomer_rub 1
+./makepage $posledniy_nomer_rub 1
+#sleep 3
+}
+delete_by_id(){
+	file_for_delete=$(ls attach| grep attachID:$material_id)
+	nomer_rub_remake_attach=$(ls attach| grep attachID:$material_id|awk -Fr: '{print $1}')
+	if [ -z "$file_for_delete" ]; then
+	echo "Материал не существует! Завершение работы..."
+	#sleep 1
+	exit 1
+	else
+	ls attach |grep $nomer_rub_remake_attach'r:'> listings
+	rm attach/$file_for_delete
+	printf "Внимание! Удален $file_for_delete.\nПри не корректном переименовании остальных элементов следует проверить их названия,\n а так же проверить настройку рубрики, где element_number должен быть равен значению: кол-во_элементов+1\n--------------------"
+	
+	nomer_rub_remake_attach=$(echo $file_for_delete|awk -Fr: '{print $1}')
+	nomer_elementa=$(echo $file_for_delete|awk -F: '{print $3}'|awk -Fe '{print $1}')
+	nomer_satranici=$(echo $file_for_delete|awk -F: '{print $2}'|awk -Fp '{print $1}')
+
+	backup_attach
+	
+	./remake_attach $nomer_rub_remake_attach $nomer_elementa $nomer_satranici
+
+	remake_num_elements
+	
+	./makelink $nomer_rub_remake_attach 1
+	echo "$nomer_rub_remake_attach<---- номер рубрики на линковку..."
+	./makepage $nomer_rub_remake_attach 1
+	fi
+}
+check_iD(){
+	red='-e \e[42;31m' 
+	endColor='\e[0m'
+	#------условие: если номер элемента равен последнему на странице
+	last_file=$(cat last_mod_file)
+	last_element=$(echo $last_file|awk -F: '{print $3}'|awk -Fe '{print $1}')
+	last_rubrick=$(cat last_mod_rubrick)
+	
+	Xelement=$(awk -F= '/element_max=/{print $2}'< rubrick/$last_rubrick)
+	if [ "$Xelement" == "$last_element" ];then 
+	echo "___________________error______________________"
+	echo ${red}'Найдена ошибка:'${endColor}' на странице не может быть больше ['$Xelement'] элементов, element_number - не должен быть увеличен на еденицу. Завершение работы.'
+	echo "___________________error______________________"
+	#sleep 10
+	exit 1
+	fi
+	#last_name_rubrick=$(ls rubrick| grep $last_rubrick)
+	#------
+	
+	
+	true=$(ls attach| grep 'attachID:'$iD_material|wc -l)  # найти iD по номеру
+if [ "$true" == "1" ];then 
+echo 'Материал найден по iD:'$iD_material  # акцептор найден
+	file_to_attach=$(ls attach| grep 'attachID:'$iD_material) # найдено имя акцептора
+			#------------------- счетчик материалов
+			if [ -f "last_material_id" ];then
+			id=$(cat last_material_id)
+			let id++
+			fi
+			#-------------------
+			group=$(ls attach| grep 'attachID:'$iD_material| awk -F: '{print $7}')
+			if [ -z "$group" ];then # если в названии акцептора нет пометки группа - значит добавляем и записывает номер следующего материала как прикрепленного
+				mv attach/$file_to_attach attach/$file_to_attach':group:'$id 
+			else
+				mv attach/$file_to_attach attach/$file_to_attach','$id  # в данном случае просто добавляем номер следующего материала через запятую
+			fi
+			tobreak=1
+else
+tobreak=0
+echo "Материал с iD$iD_material не существует!"
+fi
+
+}
+remake_num_elements(){
+		#nomer_rub=1
+
+	#if [ -f last_page_and_element ]; then
+	#sed -i s'/element_number='$old'/element_number='$new'/g' rubrick/$imya_fayla_rubriki
+	imya_fayla_rubriki=$(ls rubrick| grep $nomer_rub_remake_attach'r:')
+	#last_element=$(awk -F= '/last_element=/{print $2}'< last_page_and_element)
+	#last_page=$(awk -F= '/last_page=/{print $2}'< last_page_and_element)
+	#element_max=$(cat rubrick/`ls rubrick|grep $rubrick_number'r:'`|awk -F= '/element_max=/{print $2}') 
+	#page_number=$(cat rubrick/`ls rubrick|grep $rubrick_number'r:'`|awk -F= '/page_number=/{print $2}')
+	latest_page=`ls attach|grep $nomer_rub_remake_attach'r:'| sort -n -r -t: -k2| head -1|awk -F: '{print $2}'|awk -Fp '{print $1}'`		#
+	#echo "latest_page ---> $latest_page"
+	latest_element=`ls attach|grep $nomer_rub_remake_attach'r:'|grep $latest_page'p:'| sort -n -r -t: -k3| head -1|awk -F: '{print $3}'|awk -Fe '{print $1}'`
+	
+
+
+	element_max=$(awk -F= '/element_max=/{print $2}'< rubrick/$imya_fayla_rubriki)
+	#page_number=$(awk -F= '/page_number=/{print $2}'< rubrick/$imya_fayla_rubriki)
+	
+	#element_number=$(awk -F= '/element_number=/{print $2}'< rubrick/$imya_fayla_rubriki)
+	#echo "p=$latest_page	e=$latest_element	$nomer_rub r:"
+	#old=$page_number
+	
+	if [ "$latest_element" == "$element_max" ];then
+	echo "-----------> условие [1]"
+	echo "page_number= ---> $latest_page"
+	new=1
+	let latest_page++
+	fi
+
+	
+	if [ "$latest_element" != "$element_max" ];then
+	echo "-----------> условие [2]"
+	echo "page_number= ---> $latest_page"
+	new=`expr $latest_element + 1`
+		if [ "$new" == "$element_max" ];then
+		echo "-----------> условие [3]"
+			new=1
+			let latest_page++
+		fi
+	fi
+	
+	echo ">page_number= ------> $latest_page"
+	echo ">element_number= ------> $new"
+	
+	sed -i s'/element_number=.*$/element_number='$new'/' rubrick/$imya_fayla_rubriki
+	
+	sed -i s'/page_number=.*$/page_number='$latest_page'/' rubrick/$imya_fayla_rubriki
+	
+	
+
+	#else
+	#echo "Не корректное удаление, файл 'last_page_and_element' содержащий новые настройки рубрики не был найден!"
+	#echo "Завершение..."
+	#exit 1
+	#fi
+	
+	
+	
+	#if [ "$page_number" -eq "1" ];then
+	#pob_max=$(awk -F= '/pob_max=/{print $2}'< rubrick/$imya_fayla_rubriki)
+	#let pob_max--
+	#sed -i s'/page_number=1/page_number='$pob_max'/g' rubrick/$imya_fayla_rubriki
+	
+	#bor_number=$(awk -F= '/bor_number=/{print $2}'< rubrick/$imya_fayla_rubriki)
+	#old=$bor_number
+	#let bor_number--
+	#if [ "$bor_number" -le "1" ];then
+	#sed -i s'/bor_number='$old'/bor_number=1/g' rubrick/$imya_fayla_rubriki
+	#else
+	#sed -i s'/bor_number='$old'/bor_number='$bor_number'/g' rubrick/$imya_fayla_rubriki
+	#fi
+	
+	#fi
+	
+	#pob_number=$(awk -F= '/pob_number=/{print $2}'< rubrick/$imya_fayla_rubriki)
+	#old=$pob_number
+	#let pob_number--
+	#sed -i s'/page_number='$old'/element_number='$pob_number'/g' rubrick/$imya_fayla_rubriki
+	
+	
+	#else
+	#sed -i s'/element_number='$old'/element_number='$new'/g' rubrick/$imya_fayla_rubriki
+	#fi
+}
+
+ls attach|tr '\t' '\n'> attach_tmp		#  так как запрос в первой половине выражения выполняется 4 раза  - то возможно результат запроса можно поместить в переменную
+										#	и использовать уже ее, вместо ресурсоемких запросов к файлу или к директории
+ls rubrick|tr '\t' '\n'> rubrick_tmp
+
+
+if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+printf "Введите действие:\n 1. Создать элемент\n 2. Присоеденить элемент\n ...\n 4. Удалить материал по его id\n\nsleeper:>"
+fi
+read modify	# введите действие
+printf "\n"
+#if (( "$modify" == "0" ))
+		#then
+
+		#if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+		#printf "Действие выбрано: $modify\n"
+		#echo -e "\e[33mНастройки sleeper\e[0m\n"	
+		#printf " 1. Рабочая директория по умолчанию\n 2. Директория с полноразмерными изображениями\n 3. Директория для миниатюр альбомов 4. Директория с музыкой \n 5. Директория с готовыми статьями/текстами\n 6. Тип элемента по умолчанию \n 7. Настроить рубрики \n 8. Только командный режим \nsleeper:>"
+		#fi
+#read options	# введите действие
+
+#fi
+
+#if (( "$modify" == "3" ))
+		#then
+
+		#if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+		#printf "Действие выбрано: $modify\n"
+		#echo -e "\e[33mУдалить последний элемент\e[0m\n"	
+		#fi
+		#delete_last_element	# удаляет последний добавленный материал
+#fi
+
+if (( "$modify" == "4" ))
+		then
+
+		if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+		printf "Действие выбрано: $modify\n"
+		echo -e "\e[33mУдалить материал по его id\e[0m\n"	
+		printf "Введите id материала:"
+		fi
+read material_id	# введите действие
+delete_by_id
+
+fi
+
+#if (( "$modify" == "99" ))
+		#then
+
+#remake_num_elements
+
+#fi
+
+if [ "$modify" == "1" -o "$modify" == "2" ]
+		then
+	if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+		printf "Действие выбрано: $modify\n"
+		echo -e "\e[33mСоздание элемента\e[0m\n"	
+		printf "Введите имя файла. Создание материала зависит от расширения, будьте внимательны!!!\nsleeper[file]:>"
+	fi
+		
+		while read file_name;do	# введите действие
+		material_extension_checker
+		check_name_of_file
+		if [ "$tobreak" == "1" ];then tobreak=0; break;fi
+		done
+	if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+		printf "Введите номер рубрики (или) название рубрики (или) часть названия рубрики.\nsleeper[rubrick]:>"
+	fi
+		while read name_rubrick;do	# введите действие
+		number_or_name
+		if [ "$tobreak" == "1" ];then tobreak=0; break;fi
+		done
+		#---------------------------Присоеденить материал-------------------------------
+	if [ "$modify" == "2" ];then
+		if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+		printf "Введите [iD] материала к которому нужно присоединить элемент. Например 52.\nsleeper[iD]:>"
+		fi
+		while read iD_material;do	# введите номер материала к которому нужно присоеденить элемент
+		check_iD
+		if [ "$tobreak" == "1" ];then tobreak=0; break;fi
+		done
+	fi	
+		#---------------------------Присоеденить материал-------------------------------
+		
+	if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+		echo -e "\e[33mСоздание элемента $filename_short тип $type_element\nв рубрике $namer\e[0m\n"
+		echo "Вы уверены?  Y/N"
+	fi
+		read modify
+		if [ "$modify" == "Y" -o "$modify" == "y" ];then 
+		execute_action
+		
+		else
+	if [ "$command_only" == "NO" -o "$command_only" == "no" ];then 
+		echo "Видимо нет.. Завершение работы"
+	fi
+		exit 1
+		fi
+fi
+
+
+

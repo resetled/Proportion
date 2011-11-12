@@ -1,0 +1,253 @@
+#!/bin/bash -u
+			# Ожидается ввод параметра: [имя_элемента тип_элемента ссылка_на_материал ссылка_на_превью]
+
+			name_element=$1  ###дефолт####
+###тест##	name_element="Тратататататтатата"
+			real_num=$(printf "$name_element" | wc -m)
+			
+			if [ "$real_num" -ge "15" ];then
+			short_name_element=$(echo $name_element | grep -Eo '^.{15}')		# сокращение имени файла чтобы он влезал в строку
+			sname=$(echo $short_name_element'...')
+			else 
+			sname=$name_element													# если длина имени меньше 15 символов
+			fi
+			
+			type_element=$2  ###дефолт####
+			src=$3  ###дефолт####
+			src_mod=$4  ###дефолт####
+			htmlfile=$5  ###дефолт####
+			config_name_rubrick=$6  ###дефолт####	
+			rubric_number=${7}  # свободное значение ###дефолт####
+			page_number=$8  ###дефолт####
+			element_number=$9 ###дефолт####
+			file_name=${10}  ###дефолт####
+			rubrick_name=${11}  ###дефолт####
+			#full_name_rubrick=${12}  ###дефолт####
+			follow="./rubrick/"  ###дефолт####
+			
+###тест####			type_element="text"
+###тест####			src="/home/roma/proportion/text/Кто_такие~маркшейдеры.txt"
+###тест####			src_mod=""
+###тест####			htmlfile="attach"
+###тест####			config_name_rubrick="2r:blog.data"
+###тест####			rubric_number="2"  # свободное значение
+###тест####			page_number="1"
+###тест####			element_number="1"
+###тест####			file_name="Кто_такие~маркшейдеры.txt"
+###тест####			rubrick_name="blog.data"
+###тест####			follow="./rubrick/"
+			
+			
+			#echo "type_element=$type_element"
+			
+#echo -e "\e[36m\n[genElement][import]:\nname_element=$name_element\ntype_element=$type_element\nsrc=$src\nsrc_mod=$src_mod\nhtmlfile=$htmlfile\nconfig_name_rubrick=$config_name_rubrick\e[0m\n"
+			default_canvas_height=0
+			default_canvas_width=0
+			H_ready=0 
+			W_ready=0
+ 			top=0
+ 			right=0
+ 			bottom=0
+ 			left=0
+#printf "\ngenElement: file_name is $file_name\n"	
+			thumbnail=0
+			size_info=0
+
+type_file_text (){
+			#text_whith_new_line=$(cat $src|tr '\n' '\t'|sed s'/\t\t/\t/g'|sed s'/\t/<br \/><p>/g')¶
+			text_whith_new_line=$(cat $src|tr '\t' ' '|tr '\n' '\t'|sed s'/\t\t/\t/g'|sed s'/\t\t\t/\t/g'|sed s'/\t/<br \/>/g'|sed s'/¶/<p>/g')
+			
+			Zname_element=$(echo $name_element|tr '_' ' '|tr ':' ' '|tr '~' ' ')
+			namer=$(echo $rubrick_name |awk -F. '{print $1}')  # имя рубрики
+			
+			echo '<div class="name_blog_content">'$Zname_element'<a id="text" href="./'$namer$page_number'.html#post'$id'" alt="ссылка на этот пост" title="ссылка на этот пост" name="post'$id'"> #'$id'</a></div>
+			<div class="blog-date">'`date -R|awk '{print $2" "$3" "$4"  "$5}'`'</div>
+			<div class="blog-border"><div class="blog-text">'`echo $text_whith_new_line`'</div></div>
+			<div style="clear: left; margin-bottom: 10px;"></div>' > $work_dir$htmlfile'/'$rubric_number'r:'$page_number'p:'$element_number'e:'$file_name':'$htmlfile'ID:'$id
+			
+}
+type_file_archive (){
+			Zname_element=$(echo $name_element|tr '_' ' '|tr ':' ' '|tr '~' ' ')
+			namer=$(echo $rubrick_name |awk -F. '{print $1}')  # имя рубрики
+			size_info=$(ls -lah $src |awk '{ print $5}')
+
+			echo '<div style="clear: left;"></div><br /><br /><a  href=".'$src'">'$Zname_element' ('$size_info'). </a>Добавлено: '`date -R|awk '{print $2" "$3" "$4"  "$5}'`'<a id="text" href="./'$namer$page_number'.html#post'$id'" alt="ссылка на этот материал" title="ссылка на этот материал" name="post'$id'"> #'$id'</a>
+			<a href=".'$src'" alt="'$Zname_element' ('$size_info')">
+			<img style="margin:-10px 24px 4px 24px; border:0px;float:left;" width="46" height="40" src="../res/tarbz2.png"></a>
+			<br /><div style="clear: left;margin-bottom: 10px;"></div>' > $work_dir$htmlfile'/'$rubric_number'r:'$page_number'p:'$element_number'e:'$file_name':'$htmlfile'ID:'$id
+			
+}
+
+			type_file_music(){
+				
+			
+							size_string=$(mp3info -p "%k\n%S\n" $src)
+							
+							read size_info size_in_seconds <<< $(printf "$size_string")
+							read size <<< $(bc <<< "$size_info / 1000")	# Мегабайт
+									if [ "$size" -eq "0" ]
+											then
+											read size <<< $(printf "$size_info Kb")	# Килобайт
+									fi
+									if [ "$size" -ne "0" ]
+											then
+											read size <<< $(printf "$size Mb")	# Мегабайт
+									fi
+							read time <<< $(bc <<< "$size_in_seconds / 60")	# минуты
+												#id="img_x"
+							name_of_link="скачать/открыть"
+			echo '<div>
+			<a href="''.'$src'" title="'$name_element' [track_id: '$id']" name="post'$id'">
+			<img style="border: 0px double #a6a6a6;float: left;margin: 0px 0px 0px 30px;" src="../res/music_img.png" height="152px" width="152px">
+			</a>
+			<div id="'$image_text_g'" style="margin-left: -153px;""><b>'$sname'</b><br />'$size' - '$time' min<br />	
+			<a href="''.'$src'" title="'$name_element' track_id: '$id'" alt="'$name_element'">'$name_of_link'<br />
+			</a>
+			<img id="image_g" src="./res/none.gif"></div></div>
+			<!--point-->' > $work_dir$htmlfile'/'$rubric_number'r:'$page_number'p:'$element_number'e:'$file_name':'$htmlfile'ID:'$id
+			
+			}
+				
+			type_file_image(){
+			#default_canvas_height
+
+#--------------------Загружаем настройки миниатюр, если нет настроек - записываем умолчания и используем их--------------------------			
+error=0
+conf="thumbnail.conf"
+tmp=0
+
+#read tmp <<< $(cat $thumbnail$conf)
+#printf "[genElement] Path to settings: $thumbnail$conf\n"
+#ls $thumbnail|grep $conf > /dev/null
+#error=$?
+
+if [ ! -f "$thumbnail$conf" ]; then
+		
+		default_canvas_height=152
+		default_canvas_width=152
+		
+		touch $thumbnail$conf
+		printf "# Настройки размера области в которую будет вписана мини-картинка (предпросмотр оригинала)\n#\ndefault_canvas_height=$default_canvas_height\ndefault_canvas_width=$default_canvas_width" > $thumbnail$conf
+
+		else
+
+			default_canvas_height=$(awk -F= '/default_canvas_height=/{print $2}' < thumbs/$conf)
+			
+		#printf "\nTRACE: rubric_number=$rubric_number rubrick_name=$rubrick_name\n"
+			default_canvas_width=$(awk -F= '/default_canvas_width=/{print $2}' < thumbs/$conf)
+					
+				if [ -z "$default_canvas_height" ]
+				then
+				printf "[]sleeper: first line of config_name_rubrick was empty!\n[2]Apply default settings...and save\n"
+				default_canvas_height=152
+				default_canvas_width=152
+		printf "# Настройки размера области в которую будет вписана мини-картинка (предпросмотр оригинала)\n#\ndefault_canvas_height=$default_canvas_height\ndefault_canvas_width=$default_canvas_width" > $thumbnail$conf
+				fi
+fi
+
+			#printf "\nTRACE: default_canvas_height=$default_canvas_height default_canvas_width=$default_canvas_width\n"
+			read size_info W_ready H_ready H_image W_image top right bottom left <<< $(./scaleimage $src $src_mod $default_canvas_height $default_canvas_width)
+			#printf "\nTRACE: src=$src src_mod=$src_mod default_canvas_height=$default_canvas_height default_canvas_width=$default_canvas_width\n"
+			#printf "\nTRACE: size_info=$size_info W_ready=$W_ready H_ready=$H_ready H_image=$H_image W_image=$W_image top=$top right=$right bottom=$bottom left=$left\n"
+#printf "[genElement] left===$left\n"
+left_text=0
+
+if [ "$left" -eq "0" ]
+			then
+			left_text=153
+			
+fi
+if [ "$left" -ne "0" ]
+			then
+			left_text=$(echo "153 - ($left-30)"| bc)
+			
+fi
+					# '.' - добавлено специально, ./root/root.html --> ../img/*.png
+last=$(echo '<div>
+			<a href="''.'$src'" title="'$name_element' [pic_id: '$id']" name="post'$id'">
+			<img style="border: 1px double #a6a6a6;float: left; margin: '$top'px '$right'px '$bottom'px '$left'px;" src="''.'$src_mod'" height="'$H_ready'px" width="'$W_ready'px">
+			</a>
+			<div id="image_text_g" style="margin-left: -'$left_text'px;">'$sname'<br />'$W_image "x" $H_image' - '$size_info'<br />	
+			<a href="''.'$src'" title="'$name_element' [pic_id: '$id']" alt="'$name_element'">'$name_of_link'<br /></a>
+			<img id="image_g" src="./res/none.gif">
+			</div>
+		</div>
+<!--point-->')
+
+echo $last > $work_dir$htmlfile'/'$rubric_number'r:'$page_number'p:'$element_number'e:'$file_name':'$htmlfile'ID:'$id
+echo $last > last_image/last_image
+
+
+			}
+			
+			if [ ! -f "$follow$config_name_rubrick" ]; then  #$follow$config_name_rubrick
+			printf "sleeper:[genElement] [$rubric_number] first line of config_name_rubrick was empty!\nPlease reload program...\n"
+			#echo "null"> /dev/null
+			exit 1
+			else
+			
+			work_dir=$(awk -F= '/work_dir=/{print $2}' < rubrick/$config_name_rubrick)
+			
+			img_dir=$(awk -F= '/img_dir=/{print $2}'< rubrick/$config_name_rubrick)
+		
+			thumbnail=$(awk -F= '/thumbnail=/{print $2}'< rubrick/$config_name_rubrick)
+			
+			music_dir=$(awk -F= '/music_dir=/{print $2}'< rubrick/$config_name_rubrick)
+		
+			text_dir=$(awk -F= '/text_dir=/{print $2}'< rubrick/$config_name_rubrick)
+			
+			archive_dir==$(awk -F= '/archive_dir=/{print $2}'< rubrick/$config_name_rubrick)
+		
+			only_command=$(awk -F= '/only_command=/{print $2}'< rubrick/$config_name_rubrick)
+		
+			absolut_path=$(awk -F= '/absolut_path=/{print $2}'< rubrick/$config_name_rubrick)
+			
+			
+		
+					if [ -z "$work_dir" ]
+							then
+							printf "sleeper:[genElement] first line of config_name_rubrick was empty!\nPlease reload program...\n"
+							exit 1
+					fi
+			fi
+
+			#------------------- счетчик материалов
+			if [ -f "last_material_id" ];then
+			id=$(cat last_material_id)
+			let id++
+			else
+			id=1
+			echo "1" > last_material_id
+			fi
+			#-------------------
+			
+			image_g="image_g"
+			image_text_g="image_text_g"
+
+			name_of_link="ссылка на исходник"	# название ссылки ведущей к полноразмерной картинке или материалу
+
+			buffer="nothing"			# буфер для склеивания частей страницы
+
+			if [ "$type_element" == "image" ];then
+			type_file_image
+			fi
+			
+			if [ "$type_element" == "music" ];then
+			type_file_music
+			fi
+			
+			
+			if [ "$type_element" == "text" ];then
+			type_file_text
+			fi
+			
+			if [ "$type_element" == "archive" ];then
+			type_file_archive
+			fi
+			
+			echo $id > last_material_id
+			echo $rubric_number'r:'$page_number'p:'$element_number'e:'$file_name':'$htmlfile'ID:'$id > last_mod_file
+			#buffer=$(cat $htmlfile)
+			#printf "[genElement]:\n$buffer\n[genElement]:[end]\n"
+			
+exit 0

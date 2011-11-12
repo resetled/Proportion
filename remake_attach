@@ -1,0 +1,991 @@
+#!/bin/bash
+#remake_attach
+echo "Вас приветствует скрипт remake_attach!"
+
+rubrick=$1		# аргумент  - номер рубрики, где произошло удаление и необходимо выполнить переименование
+deleted_elem=$2
+deleted_num_page=$3
+Zeta=0
+LAST=0
+p=0
+n=0
+x="null"
+P="null"
+N="null"
+state="null"
+read="null"
+texts="null"
+breaking=0
+breaking_pages=0
+max_a=0
+max_b=0
+
+FIRST=0
+off=0
+deleted=0
+double_deleted=0 # индикатор двойного удаления элементов, свид-ет об ошибке
+echo "Значение введено!"
+element_max=$(cat rubrick/`ls rubrick|grep $rubrick_number'r:'`|awk -F= '/element_max=/{print $2}') 
+page_number=$(cat rubrick/`ls rubrick|grep $rubrick_number'r:'`|awk -F= '/page_number=/{print $2}') 
+#let element_max--
+#ls attach |grep $rubrick'r:'> listings
+#max=$(cat listings|wc -l)
+printf "\n"
+echo "rubrick=$rubrick" > переменные
+echo "element_max=$element_max">> переменные
+echo "page_number=$page_number">> переменные
+echo "deleted_elem=$deleted_elem">> переменные
+echo "deleted_num_page=$deleted_num_page">> переменные
+echo "=================================" >> переменные
+echo "=================================" > тестирование
+#endlist_n (){
+
+				##max_a=`echo "$n * $p"| bc`
+				
+				##if [ "$max" == "$max_a" ];then
+				###echo "[endlist_n] over" >> переменные  
+				##breaking=1
+				##fi
+
+	##echo "[endlist_n] max=$max | max_a=$max_a| n=$n| p=$p" >> переменные
+	##echo "[endlist_n] attach/$state | attach/$rubrick'r:'$P'P:'$N'N:'$texts" >> переменные
+	##echo "[endlist_n] read=$read| x=$x| N=$N | P=$P" >> переменные
+	##echo "[endlist_n] texts=$texts| rubrick=$rubrick| p=$p" >> переменные
+	##echo "[endlist_n] state=$state" >> переменные
+	##echo "[endlist_n] LAST=$LAST" >> переменные
+	##echo "[endlist_n] Zeta=$Zeta" >> переменные
+	##echo "[endlist_n] deleted=$deleted" >> переменные
+	##echo "=================================" >> переменные
+	##let max_a++
+#}
+rename_files(){
+	if [ ! -f "attach/$state" ]; then printf "[remake_attach:state] attach/$state не существует. Завершение..\nОбратите внимание на element_number в конфиге рубрики." >> переменные;exit 1;fi
+	if [ -f "attach/$rubrick'r:'$p'p:'$N'e:'$texts" ]; then printf "[remake_attach:file] attach/'$rubrick'r:'$p'p:'$N'e:'$texts' уже существует. Завершение..\nОбратите внимание на element_number в конфиге рубрики." >> переменные;exit 1;fi
+	mv attach/$state attach/$rubrick'r:'$P'p:'$N'e:'$texts
+
+
+	if [ "$p" != "1" ];then
+	#echo "[rename_files] state=$state" >> переменные
+	#echo "[rename_files] texts=$texts| rubrick=$rubrick| p=$p" >> переменные
+	#echo "[rename_files] read=$read| x=$x| N=$N | P=$P" >> переменные
+	#echo "[rename_files] max=$max | max_a=$max_a| n=$n| p=$p" >> переменные
+	echo "[rename_files] attach/$state | attach/$rubrick'r:'$P'P:'$N'N:'$texts" >> переменные
+	#echo "[rename_files] LAST=$LAST" >> переменные
+	#echo "[rename_files] Zeta=$Zeta" >> переменные
+	echo "=================================" >> переменные
+	#echo "Element complite=$n" >> переменные
+	fi
+}
+
+return_element(){
+			read=$(echo "'$rubrick'r:`expr $p - 1`p:'$n'e:")
+			x=$(grep $read <listings|wc -l)
+			
+			N=`expr $x + 1`
+			P=`expr $p - 1`
+
+			if [ "$p" != "1" ];then
+	echo "[return_element] max=$max | max_a=$max_a| n=$n| p=$p" >> переменные
+	echo "[return_element] attach/$state | attach/$rubrick'r:'$P'P:'$N'N:'$texts" >> переменные
+	echo "[return_element] read=$read| x=$x| N=$N | P=$P" >> переменные
+	echo "[return_element] texts=$texts| rubrick=$rubrick| p=$p" >> переменные
+	echo "[return_element] state=$state" >> переменные
+	echo "[return_element] LAST=$LAST" >> переменные
+	echo "[return_element] Zeta=$Zeta" >> переменные
+	echo "=================================" >> переменные
+	fi
+}
+
+not_first_element(){
+				texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)  #  взять остальную часть имени, убрать пустые строки
+
+				if [ "$n" != "1" ]; then
+				N=`expr $n - 1`
+				P=$p
+				fi
+
+				
+	if [ "$p" != "1" ];then
+	echo "[not_first_element] max=$max | max_a=$max_a| n=$n| p=$p" >> переменные
+	echo "[not_first_element] attach/$state | attach/$rubrick'r:'$P'P:'$N'N:'$texts" >> переменные
+	echo "[not_first_element] read=$read| x=$x| N=$N | P=$P" >> переменные
+	echo "[not_first_element] texts=$texts| rubrick=$rubrick| p=$p" >> переменные
+	echo "[not_first_element] state=$state" >> переменные
+	echo "[not_first_element] LAST=$LAST" >> переменные
+	echo "[not_first_element] Zeta=$Zeta" >> переменные
+	echo "=================================" >> переменные
+	fi
+}
+find_element(){
+	state=$(grep ':'$p'p:' <listings|grep ':'$n'e:')
+	if [ "$p" != "1" ];then
+	echo "[find_element] grep '$p'p:<listings|grep '$n'e:" >> переменные
+	echo "[find_element] max=$max | max_a=$max_a| n=$n| p=$p" >> переменные
+	echo "[find_element] attach/$state | attach/$rubrick'r:'$P'P:'$N'N:'$texts" >> переменные
+	echo "[find_element] read=$read| x=$x| N=$N | P=$P" >> переменные
+	echo "[find_element] texts=$texts| rubrick=$rubrick| p=$p" >> переменные
+	echo "[find_element] state=$state" >> переменные
+	echo "[find_element] LAST=$LAST" >> переменные
+	echo "[find_element] Zeta=$Zeta" >> переменные
+	echo "=================================" >> переменные
+	fi
+}
+
+perenos_Active(){
+ # основной алгоритм: флаг Zeta=1
+				#echo "[39]Перебор элементов------p=$p  n=$n"
+				#state=$(grep $p'p:' <listings|grep $n'e:')
+				find_element
+			#echo "строка 124" >> переменные
+			if [ "$LAST" == "0" ];then
+				# LAST=0
+				#echo "[45]Переименовываем на текущей странице------"
+				#echo "строка 128" >> переменные
+			  if [ -n "$state" ]; then # номер найден
+
+				if [ "$n" != "$deleted_elem" -a "$p" != "$deleted_num_page" ]; then
+				not_first_element
+				# проверка существования файлов
+				rename_files
+				fi
+				# исходника и нового
+			#if [ "$n" != "1" ]; then
+			#mv attach/$state attach/$rubrick'r:'$p'p:'$N'e:'$texts	# переименуем
+			#echo "-- attach/$state  --->  attach/$rubrick'r:'$p'p:'$N'e:'$texts"
+			#fi
+				
+				if [ "$n" == "$max" ];then
+				LAST=1
+				echo "переключатель на алгоритм возврата!!!" >> переменные
+				fi
+
+			  fi
+				if [ -z "$state" ]; then
+				echo "state c ошибкой!!!" >> переменные
+				exit 1
+				fi
+				
+			fi # LAST условие
+			
+			if [ "$LAST" == "1" ];then		# если мы на другой странице - нужно сдвинуть элемент на предыдущую
+											# а слудующий элемент - будет уже переименован как "n-1"
+			echo "[64]Перенос с другой страницы------" >> переменные
+			
+			return_element
+			# проверка существования файлов
+			rename_files
+			# исходника и нового
+			LAST=0	
+			fi	# LAST условие
+}
+
+
+pervaya_stranica(){
+
+    if [ "$deleted_elem" == "1" -a "$off" == "0" ];then
+	FIRST=1
+	off=1
+	#echo "[:::удален_первый_элемент:::] FIRST=$FIRST" >> тестирование
+	fi
+		if [ "$n" != "0" -a "$n" != "1" -a "$FIRST" != "1" ];then
+				#echo "[:::pervaya_stranica:::] Видимо, n>1:  n=$n" >> переменные
+
+
+				if [ "$n" -gt "$deleted_elem" -a "$n" -ne "$deleted_elem" ];then
+					#echo "[:::pervaya_stranica:::] Здесь перечисляются все остальные файлы  n($n) > deleted_elem($deleted_elem)" >> переменные
+
+
+						if [ "$n" != "1" ];then
+						let n++
+						fi
+							N=`expr $n - 1`
+							P=$p
+							texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+							find_element
+							#echo "А---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+							##Таки найден, говоришь? смотрим что там:
+				
+							if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+								if [ "$p" == "$deleted_num_page" ];then
+								
+								echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+								rename_files
+								fi
+							fi
+				fi
+				
+				
+				if [ "$n" == "$deleted_elem" ];then
+
+				if [ "$n" != "1" ];then
+				let n++
+				fi
+				
+				N=`expr $n - 1`
+				P=$p
+				texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+				find_element
+				#echo "Б---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+				#Таки найден, говоришь? смотрим что там:
+				
+					if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+						
+						if [ "$p" == "$deleted_num_page" ];then
+								
+						echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+						rename_files
+						fi
+
+					fi
+						
+					
+				fi
+				
+	fi
+
+				if [ "$FIRST" == "1" ];then
+					#echo "---> n=$n   это первый элемент" >> переменные
+
+									
+									let n++
+									N=`expr $n - 1`
+									P=$p
+									texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+									find_element
+									#echo "В---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+									#Таки найден, говоришь? смотрим что там:
+								let n--
+									if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+									
+											if [ "$p" == "$deleted_num_page" ];then
+											
+											echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+											rename_files
+											fi
+									fi
+									
+								let n--
+									
+									
+					fi
+				
+
+				if [ -z "$state" ];then
+				Zeta=1  # уменьшаем на еденицу с этого места
+				echo "--->  вон оно чо Zeta=1" >> переменные
+				break
+				fi
+}
+
+
+drugaya_stranica(){
+
+		echo "[:::какой номер был удален:::] deleted_elem=$deleted_elem" >> переменные
+		
+
+		if [ "$n" != "0" -a "$n" != "1" ];then
+				echo "[:::drugaya_stranica:::] Видимо, n>1:  n=$n" >> переменные
+
+
+				if [ "$n" -gt "$deleted_elem" -a "$n" -ne "$deleted_elem" ];then
+					#echo "[:::pervaya_stranica:::] Здесь перечисляются все остальные файлы  n($n) > deleted_elem($deleted_elem)" >> переменные
+
+
+						if [ "$n" != "1" ];then
+						let n++
+						fi
+							N=`expr $n - 1`
+							P=$p
+							texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+							find_element
+							echo "А---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+							##Таки найден, говоришь? смотрим что там:
+				
+							if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+								if [ "$p" == "$deleted_num_page" ];then
+								
+								echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+								rename_files
+								fi
+							fi
+				fi
+				
+				
+				if [ "$n" == "$deleted_elem" ];then
+
+				if [ "$n" != "1" ];then
+				let n++
+				fi
+				
+				N=`expr $n - 1`
+				P=$p
+				texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+				find_element
+				echo "Б---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+				#Таки найден, говоришь? смотрим что там:
+				
+					if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+						
+						if [ "$p" == "$deleted_num_page" ];then
+								
+						echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+						rename_files
+						fi
+
+					fi
+						
+					
+				fi
+				
+	fi
+
+	
+		if [ "$n" == "1" ];then
+		
+		if [ "$deleted_elem" == "1" ];then
+				echo "---> n=$n" >> переменные
+
+				if [ "$Zeta" == "1" ];then
+				echo "---> Zeta=1 вот это номер!!" >> переменные
+
+					N=$element_max
+					P=`expr $p - 1`
+					texts=$(awk -F$rubrick'r:'$P'p:'$N'e:' '{print $2}'<listings|sed /^$/d)
+			
+			echo "---> N=$N" >> переменные
+			echo "---> P=$P" >> переменные
+
+			if [ -f attach/$rubrick'r:'`expr $p - 1`'p:'$element_max'e:'$texts ]; then
+			echo "файл уже существует" >> переменные
+			# для случая когда уже существовал последний файл на прошлой странице и мы не хотим его заменять
+			state=$(grep ':'$p'p:' <listings|grep ':'`expr $n + 1`'e:')
+			
+			N=$n
+			P=$p
+		echo "---> N=$N" >> переменные
+		echo "---> P=$P" >> переменные
+			texts=$(awk -F$rubrick'r:'$P'p:'`expr $n + 1`'e:' '{print $2}'<listings|sed /^$/d)
+			
+			rename_files
+			#Zeta=0
+			
+			else
+			# файл с таким именем не был найден, а значит был удален последний файл на прошлой странице
+				
+				state=$(grep ':'$p'p:' <listings|grep ':'`expr $n + 1`'e:')
+				echo "Б---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+				#Таки найден, говоришь? смотрим что там:
+				
+						if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+						
+							if [ "$p" == "$deleted_num_page" ];then
+								
+							echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+							rename_files
+							Zeta=0
+							fi
+
+						fi
+
+			fi #  else для случая когда уже существовал последний файл на прошлой странице и мы не хотим его заменять
+				
+				fi
+		fi
+fi
+				#if [ "$FIRST" == "1" ];then
+					##echo "---> n=$n   это первый элемент" >> переменные
+
+									
+									#let n++
+									#N=`expr $n - 1`
+									#P=$p
+									#texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+									#find_element
+									#echo "В---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+									##Таки найден, говоришь? смотрим что там:
+								#let n--
+									#if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+									
+											#if [ "$p" == "$deleted_num_page" ];then
+											
+											##echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+											#rename_files
+											#fi
+									#fi
+									
+								#let n--
+									
+									
+					#fi
+				
+				wasup=$(grep ':'$p'p:' <listings|grep ':'`expr $n + 1`'e:')
+				if [ -z "$wasup" ];then
+				#Zeta=1  # уменьшаем на еденицу с этого места
+				echo "финалисты, фффьь, все!!" >> переменные
+				#echo "$P" > last_page_and_element
+				#echo "$N" >> last_page_and_element
+				break
+				fi
+}
+
+drugaya_stranica_2(){
+
+		echo "[:::какой номер был удален:::] deleted_elem=$deleted_elem" >> переменные
+		
+
+		if [ "$n" != "0" -a "$n" != "1" ];then
+				echo "[:::drugaya_stranica:::] Видимо, n>1:  n=$n" >> переменные
+
+
+				if [ "$n" -gt "$deleted_elem" -a "$n" -ne "$deleted_elem" ];then
+					#echo "[:::pervaya_stranica:::] Здесь перечисляются все остальные файлы  n($n) > deleted_elem($deleted_elem)" >> переменные
+
+
+						if [ "$n" != "1" ];then
+						let n++
+						fi
+							N=`expr $n - 1`
+							P=$p
+							texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+							find_element
+							echo "А---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+							##Таки найден, говоришь? смотрим что там:
+				
+							if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+								if [ "$p" == "$deleted_num_page" ];then
+								
+								echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+								rename_files
+								fi
+							fi
+				fi
+				
+				
+				if [ "$n" == "$deleted_elem" ];then
+
+				if [ "$n" != "1" ];then
+				let n++
+				fi
+				
+				N=`expr $n - 1`
+				P=$p
+				texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+				find_element
+				echo "Б---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+				#Таки найден, говоришь? смотрим что там:
+				
+					if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+						
+						if [ "$p" == "$deleted_num_page" ];then
+								
+						echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+						rename_files
+						fi
+
+					fi
+						
+					
+				fi
+				
+	fi
+
+	
+		if [ "$n" == "1" ];then
+		
+		if [ "$deleted_elem" == "1" ];then
+				echo "---> n=$n" >> переменные
+
+				if [ "$Zeta" == "1" ];then
+				echo "---> Zeta=1 вот это номер!!" >> переменные
+
+					N=$element_max
+					P=`expr $p - 1`
+					texts=$(awk -F$rubrick'r:'$P'p:'$N'e:' '{print $2}'<listings|sed /^$/d)
+			
+			echo "---> N=$N" >> переменные
+			echo "---> P=$P" >> переменные
+
+			if [ -f attach/$rubrick'r:'`expr $p - 1`'p:'$element_max'e:'$texts ]; then
+			echo "файл уже существует" >> переменные
+			# для случая когда уже существовал последний файл на прошлой странице и мы не хотим его заменять
+			state=$(grep ':'$p'p:' <listings|grep ':'`expr $n + 1`'e:')
+			
+			N=$n
+			P=$p
+		echo "---> N=$N" >> переменные
+		echo "---> P=$P" >> переменные
+			texts=$(awk -F$rubrick'r:'$P'p:'`expr $n + 1`'e:' '{print $2}'<listings|sed /^$/d)
+			
+			rename_files
+			#Zeta=0
+			
+			else
+			# файл с таким именем не был найден, а значит был удален последний файл на прошлой странице
+				
+				state=$(grep ':'$p'p:' <listings|grep ':'`expr $n + 1`'e:')
+				echo "Б---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+				#Таки найден, говоришь? смотрим что там:
+				
+						if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+						
+							if [ "$p" == "$deleted_num_page" ];then
+								
+							echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+							rename_files
+							Zeta=0
+							fi
+
+						fi
+
+			fi #  else для случая когда уже существовал последний файл на прошлой странице и мы не хотим его заменять
+				
+				fi
+		fi
+fi
+				#if [ "$FIRST" == "1" ];then
+					##echo "---> n=$n   это первый элемент" >> переменные
+
+									
+									#let n++
+									#N=`expr $n - 1`
+									#P=$p
+									#texts=$(awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'<listings|sed /^$/d)
+									#find_element
+									#echo "В---> удаленный элемент найден [$deleted_elem] переименуем следующий:" >> переменные
+									##Таки найден, говоришь? смотрим что там:
+								#let n--
+									#if [ -n "$state" ];then  # условие когда номер элемента больше чем есть на самом деле
+									
+											#if [ "$p" == "$deleted_num_page" ];then
+											
+											##echo "(231) "$p" != "$deleted_num_page",  p != deleted_num_page" >> переменные
+											#rename_files
+											#fi
+									#fi
+									
+								#let n--
+									
+									
+					#fi
+				
+				wasup=$(grep ':'$p'p:' <listings|grep ':'`expr $n + 1`'e:')
+				if [ -z "$wasup" ];then
+				#Zeta=1  # уменьшаем на еденицу с этого места
+				echo "финалисты, фффьь, все!!" >> переменные
+				#echo "$P" > last_page_and_element
+				#echo "$N" >> last_page_and_element
+				break
+				fi
+}
+
+
+proverka_proshloy(){
+echo "--->  Количество элементов на предыдущей "`expr $p - 1`" странице соответствует максимуму $element_max?" >> переменные
+echo "***На странице $deleted_num_page был удален  элемент $deleted_elem " >> переменные
+volume=$(ls attach|grep $rubrick'r:'`expr $p - 1`'p:'|wc -l)  # количество элементов на прошлой странице
+
+
+
+	
+if [ "$max" != "$volume" ];then  #"$element_max"
+											#=====необходимо условие, когда количество элементов на следующей странице меньше максимума для рубрики
+	if [ "$max" == "$element_max" -a "$element_max" == `expr $volume + 1` ];then
+	echo "==X==>  на предыдущей странице не хватает элемента, при условии, что на текущей $p - есть все элементы-----(их $max)-------->" >> переменные
+
+				echo "--->  Нет. $max !=$volume  Обработка.." >> переменные
+				echo "--->  перемещаем первый элемент на данной странице на прошлую страницу" >> переменные
+				echo "--->  Проверим для начала, а не удален ли первый элемент на текущей странице?" >> переменные
+				
+				proba=$(ls attach|grep $rubrick'r:'$p'p:1e:')
+				
+			 if [ -n $proba ]; then	#____________________
+			 echo "Проверка пройдена - первый файл на месте. ОК" >> переменные
+			 echo "Вернемся к нашему перемещению:" >> переменные
+				N=$element_max
+				P=`expr $p - 1`
+				texts=$(ls attach|awk -F$rubrick'r:'$P'p:'$N'e:' '{print $2}'|sed /^$/d)
+			
+				echo "---> P=$P" >> переменные
+				echo "---> N=$N" >> переменные
+
+				proba2=$(ls attach|grep $rubrick'r:'$P'p:'$N'e:')
+				echo "---> proba2=$proba2" >> переменные
+				echo "---> texts=$texts" >> переменные
+				if [ -n "$proba2" ]; then
+				echo "Дело в том, что файл $rubrick r: $P p: $element_max e: $texts уже существует, и его нельзя заменять." >> переменные
+				echo "Значит перейдем к следующему номеру..." >> переменные
+				exit 1
+				# для случая когда уже существовал последний файл на прошлой странице и мы не хотим его заменять
+				else
+				echo "Отсутствует файл!! attach/"$rubrick"r:"`expr $p - 1`"p:"$element_max"e:"$texts" " >> переменные
+				state=$(ls attach|grep ':'$p'p:'|grep ':'$n'e:')
+			
+				N=$element_max
+				P=`expr $p - 1`
+				echo "вернем на родину!---> N=$N" >> переменные
+				echo "вернем на родину!---> P=$P" >> переменные
+				texts=$(ls attach|awk -F$rubrick'r:'$p'p:1e:' '{print $2}'|sed /^$/d)
+				echo "--->  Проверим, найдено ли название файла в директории attach?" >> переменные
+
+				if [ -n "$texts" ]; then
+				echo "Проверка пройдена - название 1го файла на месте. ОК" >> переменные
+				echo "Название: $texts" >> переменные
+				
+				rename_files
+				deleted=1
+				echo "[1]deleted=$deleted" >> переменные
+				fi
+				
+				fi
+			fi	#____________________
+	fi
+	#====================================================================================================================================
+	if [ "$max" != "$element_max" -a "$element_max" == `expr $volume + 1` ];then
+	echo "==O==>  На предыдущей странице не хватает элемента, при условии, что на текущей $p - не все элементы -(их $max)-------->" >> переменные
+
+					echo "--->  Нет. $max !=$volume  Обработка.." >> переменные
+				echo "--->  перемещаем первый элемент на данной странице на прошлую страницу" >> переменные
+				echo "--->  Проверим для начала, а не удален ли первый элемент на текущей странице?" >> переменные
+				
+				proba=$(ls attach|grep $rubrick'r:'$p'p:1e:')
+				
+			 if [ -n $proba ]; then	#____________________
+			 echo "Проверка пройдена - первый файл на месте. ОК" >> переменные
+			 echo "Вернемся к нашему перемещению:" >> переменные
+				N=$element_max
+				P=`expr $p - 1`
+				texts=$(ls attach|awk -F$rubrick'r:'$P'p:'$N'e:' '{print $2}'|sed /^$/d)
+			
+				echo "---> P=$P" >> переменные
+				echo "---> N=$N" >> переменные
+
+				proba2=$(ls attach|grep $rubrick'r:'$P'p:'$N'e:')
+				echo "---> proba2=$proba2" >> переменные
+				echo "---> texts=$texts" >> переменные
+				if [ -n "$proba2" ]; then
+				echo "Дело в том, что файл $rubrick r: $P p: $element_max e: $texts уже существует, и его нельзя заменять." >> переменные
+				echo "Значит перейдем к следующему номеру..." >> переменные
+				exit 1
+				# для случая когда уже существовал последний файл на прошлой странице и мы не хотим его заменять
+				else
+				echo "Отсутствует файл!! attach/"$rubrick"r:"`expr $p - 1`"p:"$element_max"e:"$texts" " >> переменные
+				state=$(ls attach|grep ':'$p'p:'|grep ':'$n'e:')
+			
+				N=$element_max
+				P=`expr $p - 1`
+				echo "вернем на родину!---> N=$N" >> переменные
+				echo "вернем на родину!---> P=$P" >> переменные
+				texts=$(ls attach|awk -F$rubrick'r:'$p'p:1e:' '{print $2}'|sed /^$/d)
+				echo "--->  Проверим, найдено ли название файла в директории attach?" >> переменные
+
+				if [ -n "$texts" ]; then
+				echo "Проверка пройдена - название 1го файла на месте. ОК" >> переменные
+				echo "Название: $texts" >> переменные
+				
+				rename_files
+				deleted=0
+				echo "[1]deleted=$deleted" >> переменные
+				fi
+				
+				fi
+			fi	#____________________
+
+	fi
+	#====================================================================================================================================
+	if [ "$max" != "$element_max" -a "$element_max" != `expr $volume + 1` ];then
+		echo "--->  Особый случай <----" >> переменные
+		echo "--->  Удален первый элемент?" >> переменные
+		echo "--->  string 698" >> переменные
+		proba=$(ls attach|grep $rubrick'r:'$p'p:1e:')
+		echo "--->  proba=$proba <---" >> переменные
+		if [ -z $proba ];then
+		echo "--->  Да. Продолжаем.." >> переменные
+		echo "--->  Переименовываем все остальные номера на данной странице." >> переменные
+		proba2=$(ls attach|grep $rubrick'r:'$p'p:'$n'e:')
+		echo "########--->  proba2=$proba2" >> переменные
+		state=$(ls attach|grep ':'$p'p:'|grep ':'$n'e:')
+		texts=$(ls attach|awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'|sed /^$/d)
+
+		if [ -n "$state" ];then
+		if [ -n "$texts" ];then
+		N=`expr $n - 1`
+		P=$p
+		rename_files
+		fi
+		fi
+		
+		else
+		echo "--->  Нет. Обработка.." >> переменные
+
+
+						kolvo=`ls attach|awk -Fp: '{print $1}'|awk -Fr: '{print $2}'|uniq|sed /^$/d|wc -l`
+						echo "--->  Всего страниц сейчас=$kolvo <---" >> переменные
+						if [ "$kolvo" == "$p" ];then
+						#echo "Это - последняя страница в рубрике   n=$n p=$p " >> переменные
+								#proba2=$(ls attach|grep $rubrick'r:'$p'p:'$n'e:')
+								#echo "########--->  proba2=$proba2" >> переменные
+								#state=$(ls attach|grep ':'$p'p:'|grep ':'$n'e:')
+								#texts=$(ls attach|awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'|sed /^$/d)
+
+								#if [ -n "$state" ];then
+								#if [ -n "$texts" ];then
+								#N=`expr $n - 1`
+								#P=$p
+								#rename_files
+								#fi
+								#fi
+
+							for i in `seq 1 $max`;do
+							proba2=$(ls attach|grep $rubrick'r:'$p'p:'$i'e:')
+							if [ -z "$proba2" ];then
+							echo "--->[746]  Найдена 'дырка' в перечислении элементов: отсутствует элемент №"$i"" >> переменные
+							n=$i	# приравниваем текущий номер элемента к найденной "дырке"
+							let double_deleted++
+							fi
+							done
+
+								if [ "$double_deleted" == "1" ];then
+						double_deleted=0
+							state=$(ls attach|grep ':'$p'p:'|grep ':'`expr $n + 1`'e:')
+							texts=$(ls attach|awk -F$rubrick'r:'$p'p:'`expr $n + 1`'e:' '{print $2}'|sed /^$/d)
+
+							if [ -n "$state" ];then
+							if [ -n "$texts" ];then
+							echo "--->  [2]Происходит замена имен...номер 'дырки': i=$i" >> переменные
+							echo "--->  Происходит замена имен...имя файла state=$state" >> переменные
+							echo "--->  Происходит замена имен...вторая часть названия texts=$texts" >> переменные
+							N=$n
+							P=$p
+							rename_files
+							echo "--->  Это успех." >> переменные
+							fi
+							fi
+							fi
+							
+						else
+						echo "Это - НЕ последняя страница в рубрике   n=$n p=$p " >> переменные
+						#echo "--->  Нет. элемент был удален на какой-то из предыдущих страниц..$deleted = 0 " >> переменные
+						#kolvo=$(ls attach|grep $rubrick'r:'$p'p:'|wc -l)
+						#echo "--->  kolvo=$kolvo" >> переменные
+					
+							for i in `seq 1 $element_max`;do
+							proba2=$(ls attach|grep $rubrick'r:'$p'p:'$i'e:')
+							if [ -z "$proba2" ];then
+							echo "--->[746]  Найдена 'дырка' в перечислении элементов: отсутствует элемент №"$i"" >> переменные
+							n=$i	# приравниваем текущий номер элемента к найденной "дырке"
+							let double_deleted++
+							fi
+							done
+							
+						if [ "$double_deleted" == "1" -o "$double_deleted" == "0" ];then
+						double_deleted=0
+							state=$(ls attach|grep ':'$p'p:'|grep ':'`expr $n + 1`'e:')
+							texts=$(ls attach|awk -F$rubrick'r:'$p'p:'`expr $n + 1`'e:' '{print $2}'|sed /^$/d)
+
+							if [ -n "$state" ];then
+							if [ -n "$texts" ];then
+							echo "--->  [2]Происходит замена имен...номер 'дырки': i=$i" >> переменные
+							echo "--->  Происходит замена имен...имя файла state=$state" >> переменные
+							echo "--->  Происходит замена имен...вторая часть названия texts=$texts" >> переменные
+							N=$n
+							P=$p
+							rename_files
+							echo "--->  Это успех." >> переменные
+							fi
+							fi
+							fi
+						fi
+									if [ "$double_deleted" == "0" ];then
+									echo "--->  [2] Пропускаем элемент!!!: i=$i" >> переменные
+									fi
+		
+						
+						
+		fi
+		
+	fi
+	#====================================================================================================================================
+								#----то есть нужно проверять - соответствует ли текущее число элементов максимуму для данной рубрики
+	#if [ "$max" == `expr $volume + 1` ];then  #"$max"=================если на предыдущей странице не хватает одного элемента==================================
+											  ##=================при условии что впереди стоящая страница содержит максимум элементов====================
+											  ##=================и отличается от предыдущей на один элемент==============================================
+		
+	#echo "--->  перемещаем все элементы на данной странице" >> переменные
+	#fi    #===================================================
+
+	#if[ "$element_max" == `expr $volume + 1` ];then
+	#echo "====>  опапыщ!!!!11111--------------------------------------------------------------->" >> переменные
+
+	#fi
+	
+else   #  на прошлой странице - полное количество элементов, значит --->
+
+echo "--->  Да. Продолжаем.." >> переменные
+echo "--->  Элемент удален на текущей "$p"-й странице?" >> переменные
+		
+
+	if [ "$deleted" == "1" ];then
+		echo "--->  Да. Продолжаем.." >> переменные
+		echo "--->  Удален первый элемент?" >> переменные
+		proba=$(ls attach|grep $rubrick'r:'$p'p:1e:')
+		if [ -n $proba ];then
+		echo "--->  Да. Продолжаем.." >> переменные
+		echo "--->  Переименовываем все остальные номера на данной странице." >> переменные
+		proba2=$(ls attach|grep $rubrick'r:'$p'p:'$n'e:')
+		echo "########--->  proba2=$proba2" >> переменные
+		state=$(ls attach|grep ':'$p'p:'|grep ':'$n'e:')
+		texts=$(ls attach|awk -F$rubrick'r:'$p'p:'$n'e:' '{print $2}'|sed /^$/d)
+
+		if [ -n "$state" ];then
+		if [ -n "$texts" ];then
+		N=`expr $n - 1`
+		P=$p
+		rename_files
+		fi
+		fi
+		
+		else
+		echo "--->  Нет. Обработка.." >> переменные
+		echo "--->  Пропускаем все элементы, которые меньше $n" >> переменные
+		echo "      Учтем, что текущего номера  - нет, поскольку он удален, значит" >> переменные
+		echo "      чтобы его удалить - указываем в качестве донора - следующий номер," >> переменные
+		echo "      и меняем ему имя на элемент номер $n" >> переменные
+		echo "--->  Переименовываем все остальные номера на данной странице." >> переменные
+		fi
+		
+	fi
+	
+	if [ "$deleted" == "0" ];then
+	echo "--->  Нет. элемент был удален на какой-то из предыдущих страниц..$deleted = 0 " >> переменные
+	kolvo=$(ls attach|grep $rubrick'r:'$p'p:'|wc -l)
+	echo "--->  kolvo=$kolvo" >> переменные
+
+	#proverka_next=$(ls attach|grep $rubrick'r:'`expr $p + 1`'p:')
+	#if [ -n "$proverka_next" ];then
+	#let kolvo++
+	#fi
+	
+	for i in `seq 1 $kolvo`;do
+		proba2=$(ls attach|grep $rubrick'r:'$p'p:'$i'e:')
+		if [ -z "$proba2" ];then
+		echo "---> [843] Найдена 'дырка' в перечислении элементов: отсутствует элемент №"$i"" >> переменные
+		n=$i	# приравниваем текущий номер элемента к найденной "дырке"
+		let double_deleted++
+		fi
+
+	done
+			if [ "$double_deleted" == "1" ];then
+			double_deleted=0
+		state=$(ls attach|grep ':'$p'p:'|grep ':'`expr $n + 1`'e:')
+		texts=$(ls attach|awk -F$rubrick'r:'$p'p:'`expr $n + 1`'e:' '{print $2}'|sed /^$/d)
+
+		if [ -n "$state" ];then
+		if [ -n "$texts" ];then
+		echo "--->  [1]Происходит замена имен...номер 'дырки': i=$i" >> переменные
+		echo "--->  Происходит замена имен...имя файла state=$state" >> переменные
+		echo "--->  Происходит замена имен...вторая часть названия texts=$texts" >> переменные
+		N=$n
+		P=$p
+		rename_files
+		echo "--->  Это успех." >> переменные
+		fi
+		fi
+
+			fi
+		if [ "$double_deleted" == "0" ];then
+		echo "--->  [1] Пропускаем элемент!!!: i=$i" >> переменные
+		fi
+		
+
+		
+	fi
+	#if [ "$p" == "$deleted_num_page" ];then
+		#echo "--->  Да. Продолжаем.." >> переменные
+		#echo "--->  Удален первый элемент?" >> переменные
+
+		#if [ "$n" == "$deleted_elem" ];then
+		#echo "--->  Да. Продолжаем.." >> переменные
+		#echo "--->  Переименовываем все остальные номера на данной странице." >> переменные
+		#else
+		#echo "--->  Нет. Обработка.." >> переменные
+		#echo "--->  Пропускаем все элементы, которые меньше $n" >> переменные
+		#echo "      Учтем, что текущего номера  - нет, поскольку он удален, значит" >> переменные
+		#echo "      чтобы его удалить - указываем в качестве донора - следующий номер," >> переменные
+		#echo "      и меняем ему имя на элемент номер $n" >> переменные
+		#echo "--->  Переименовываем все остальные номера на данной странице." >> переменные
+		#fi
+		
+	#fi
+
+fi
+
+
+	}
+
+for_num_elements(){
+	for n in `seq 1 $element_max`;do
+				#echo "(118) $element_max" >> переменные
+				#endlist_n
+				let max_a++
+				
+				#if [ "$max" < "$max_a" ];then
+				##echo "[endlist_n] over" >> переменные
+				##max_a=0 
+				#break
+				#fi
+
+				
+				if [ "$Zeta" == "0" ];then
+				if [ "$p" == "1" ];then
+				pervaya_stranica   # алгоритм для первой страницы
+				#none=0	
+				fi
+				fi
+    
+				if [ "$Zeta" == "1" ];then 
+				#perenos_Active	# основной алгоритм
+				FIRST=0
+				#drugaya_stranica # тестовый алгоритм
+				#exit 1
+				proverka_proshloy
+				#drugaya_stranica_2
+				#none=0	
+				fi    
+							
+				let n++
+				echo "---next element--->  n++  n=$n, Zeta=$Zeta" >> переменные			
+				done
+}
+
+
+for p in `seq 1 $page_number`;do
+
+	max=$(ls attach|grep $p'p:'|wc -l)	# сколько элементов на странице
+	#echo "(222) max=$max" >> переменные
+				#if [ "$breaking" == "1" ];then
+				#max_a=1 
+				#fi
+				#if [ "$breaking_pages" == "1" ];then
+				#break 
+				#fi
+	for_num_elements
+	FIRST=1
+	#off=0
+	max_a=0
+	deleted=0
+	double_deleted=0
+	echo "[2]deleted=$deleted" >> переменные
+	echo "page_number=$page_number">> переменные					
+	#endlist_n
+							
+	n=0
+	echo "Page complite=$p" >> переменные
+	let p++
+	done
+				echo "last_page=$p" > last_page_and_element
+				echo "last_element=$n" >> last_page_and_element
+p=0
+n=0
+echo "Exit"
+exit 0
+
