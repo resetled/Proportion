@@ -9,7 +9,14 @@ options='-r'
 info=0
 info2=0
 AA=0
+if [ ! -d "text" ]; then mkdir text; echo "Hello World! Мы добавили символ абзаца: ¶ Следующая строка будет с отступом 2pt " > text/Some_text.txt;fi
+if [ ! -d "music" ]; then mkdir music;fi
+if [ ! -d "img" ]; then mkdir img; cp logo.png img/logo.png;fi
+if [ ! -d "archive" ]; then mkdir archive;fi
+if [ ! -d "attach" ]; then mkdir attach;fi
+
 if [ ! -d "last_image" ]; then mkdir last_image;fi
+
 if [ ! -f "last_image/last_image" ]; then touch last_image/last_image;fi
 
 
@@ -39,7 +46,7 @@ if [ ! -d "$AA" ]; then mkdir $AA;fi
 }
 backup_attach(){
 if [ ! -d "backup_attach" ]; then mkdir backup_attach;fi
-if [ ! -d "backup_attach" ]; then mkdir backup_rubrick;fi
+if [ ! -d "backup_rubrick" ]; then mkdir backup_rubrick;fi
 tar cf - attach | 7za a -si backup_attach/attach_`date -R|awk '{print $2"_"$3"_"$4"_"$5}'`.tar.7z
 tar cf - rubrick | 7za a -si backup_rubrick/rubrick_`date -R|awk '{print $2"_"$3"_"$4"_"$5}'`.tar.7z
 echo "12132"
