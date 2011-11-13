@@ -9,6 +9,9 @@ options='-r'
 info=0
 info2=0
 AA=0
+space_detected=0
+dots_detected=0
+
 if [ ! -d "text" ]; then mkdir text; echo "Hello World! Мы добавили символ абзаца: ¶ Следующая строка будет с отступом 2pt " > text/Some_text.txt;fi
 if [ ! -d "music" ]; then mkdir music;fi
 if [ ! -d "img" ]; then mkdir img; cp logo.png img/logo.png;fi
@@ -20,6 +23,76 @@ if [ ! -d "last_image" ]; then mkdir last_image;fi
 
 if [ ! -f "last_image/last_image" ]; then touch last_image/last_image;fi
 
+
+check_files_spaces(){
+spaces=`ls img|tr '\t' '\n'|grep [[:space:]]`
+if [ -n "$spaces" ];then
+echo "[!] Найдены графические файлы (img) с пробелами в названии:"
+echo "$spaces"
+space_detected=1
+fi
+
+spaces=`ls text|tr '\t' '\n'|grep [[:space:]]`
+if [ -n "$spaces" ];then
+echo "[!] Найдены текстовые файлы (text) с пробелами в названии:"
+echo "$spaces"
+
+space_detected=1
+fi
+spaces=`ls archive|tr '\t' '\n'|grep [[:space:]]`
+if [ -n "$spaces" ];then
+echo "[!] Найдены сжатые файлы (archive) с пробелами в названии:"
+echo "$spaces"
+
+space_detected=1
+fi
+spaces=`ls music|tr '\t' '\n'|grep [[:space:]]`
+if [ -n "$spaces" ];then
+echo "[!] Найдены музыкальные записи (music) с пробелами в названии:"
+echo "$spaces"
+space_detected=1
+fi
+
+}
+
+check_files_double_dot(){
+	
+dots=`ls img|tr '\t' '\n'|grep '\..*\.'`
+if [ -n "$dots" ];then
+echo "[!] Найдены графические файлы (img) с множеством точек в названии:"
+echo "$dots"
+dots_detected=1
+fi
+
+dots=`ls text|tr '\t' '\n'|grep '\..*\.'`
+if [ -n "$spaces" ];then
+echo "[!] Найдены текстовые файлы (text) с множеством точек в названии:"
+echo "$spaces"
+dots_detected=1
+fi
+
+dots=`ls archive|tr '\t' '\n'|grep '\..*\.'`
+if [ -n "$spaces" ];then
+echo "[!] Найдены сжатые файлы (archive) с множеством точек в названии:"
+echo "$spaces"
+dots_detected=1
+fi
+
+dots=`ls music|tr '\t' '\n'|grep '\..*\.'`
+if [ -n "$spaces" ];then
+echo "[!] Найдены музыкальные записи (music) с множеством точек в названии:"
+echo "$spaces"
+dots_detected=1
+fi
+
+}
+check_files_spaces
+check_files_double_dot
+
+if [ "$space_detected" == "1" -o "$dots_detected" == "1" ];then
+echo "Переименуйте файлы. Завершение работы..."
+exit 1
+fi
 
 command_only=$1  #  yes / no
 				 #   Написать порядок вводимых значений и что это за значения в командном режиме:
