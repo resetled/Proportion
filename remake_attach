@@ -25,8 +25,8 @@ off=0
 deleted=0
 double_deleted=0 # индикатор двойного удаления элементов, свид-ет об ошибке
 echo "Значение введено!"
-element_max=$(cat rubrick/`ls rubrick|grep $rubrick_number'r:'`|awk -F= '/element_max=/{print $2}') 
-page_number=$(cat rubrick/`ls rubrick|grep $rubrick_number'r:'`|awk -F= '/page_number=/{print $2}') 
+element_max=$(cat rubrick/`ls rubrick|grep $rubrick'r:'`|awk -F= '/element_max=/{print $2}') 
+page_number=$(cat rubrick/`ls rubrick|grep $rubrick'r:'`|awk -F= '/page_number=/{print $2}') 
 #let element_max--
 #ls attach |grep $rubrick'r:'> listings
 #max=$(cat listings|wc -l)

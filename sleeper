@@ -31,6 +31,9 @@ absolut_path="-r"
 				#rubrick_name=${rubrick_name%.*}
 				rubrick_name=$(awk -F: '/'$data'/{print $2}' < rubrick_tmp)
 				rubric_number=$(echo $data|awk -F: '{print $1}'|awk -Fr '{print $1}')  #  передавать сюда номер рубрики или вычислять более простым путем!!!
+					#echo "sleeper ($data)" > SOME
+					#echo "sleeper ($rubrick_name)" >>SOME
+					#echo "sleeper ($rubric_number)" >>SOME
 				#printf  "rubric_number=$rubric_number\ndata(full_name_rubrick)=$data" > sleeper_error
 #printf 'Файл рубрики: '$data'\nФайл на обработку: '$file_name'\nabsolut_path: '$absolut_path'\n'	
 work_dir=0		# инициализация переменных для директорий
@@ -314,8 +317,8 @@ if [ "$element_number" != "$element_max" ]
 			exported=$page_number			
 			
 			#-------------------------------
-			last_name_rubrick=$(ls rubrick| grep $rubrick_number'r:')
-			template=$(awk -F= '/template=/{print $2}'< rubrick/$last_name_rubrick)
+			last_name_rubrick=$data
+			template=$(awk -F= '/template=/{print $2}'< rubrick/$data)
 			if [ -z "$last_name_rubrick" ]; then
 				echo "Номер рубрики пустой (makepage: ls rubrick| grep 'some_number'r:). Завершение работы"
 				exit 1

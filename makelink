@@ -666,7 +666,7 @@ if [ -z "$n" ];then
 printf "ERROR: input n must be great than 0\n"
 exit 1
 else
-
+echo "makelink:  $n -gt $num_page"
 	if [ "$n" -gt "$num_page" ];then
 printf "ERROR: input n > num_page ($n > $num_page), for $rubrick_namerezult of calculating attach files\n"
 exit 1

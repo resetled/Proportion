@@ -55,14 +55,16 @@ echo "12132"
 }
 execute_action(){
 	#echo 'Имя рубрики для sleeper='$full_name_rubrick', имя файла='$file_name', options='$options
-	full_name_rubrick=$(grep $namer < rubrick_tmp)
+	full_name_rubrick=$(ls rubrick|grep $namer) #< rubrick_tmp
+
 	read info info2 <<< $(./sleeper $full_name_rubrick $file_name $type_element $options)
 	#read info2;do	# введите номер страницы в пределах от 1 до (значение из full_name_rubrick)
 	#info2=1
 	#echo $rubrick_number > last_mod_rubrick
 		#echo 'номер рубрики на экспорт='$info'  номер страницы на экспорт='$info2' <--'
 	#echo "Номер рубрики: $info|  Номер страницы: $info2|"
-	#time 
+	#time
+	echo "setup: [$rubrick_number $info2]"
 	./makelink $rubrick_number $info2	#линковка -  номер рубрики, номер страницы
 	
 	
@@ -212,9 +214,9 @@ tobreak=1
 else 
 echo 'Внимание! Рубрика не найдена, проверьте наличие настроек в директории rubrick'
 tobreak=0
-echo 'Создать Новую рубрику? Да / нет(любой_символ)'
+echo 'Создать Новую рубрику? Y / N(любой_символ)'
 read namer
-if [ "$namer" == "да" -o "$namer" == "Да" ];then 	# создать рубрику
+if [ "$namer" == "y" -o "$namer" == "Y" ];then 	# создать рубрику
 
 echo 'Введите имя рубрики: '
 read namer

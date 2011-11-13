@@ -13,7 +13,7 @@ xml_version=$(awk -F= '/xml_version=/{print $2}'< rssconfig)
     copyright=$(awk -F= '/copyright=/{print $2}'< rssconfig) 
 	   author=$(awk -F= '/author=/{print $2}'< rssconfig) 
 	   if [ -z "$xml_version" -o -z "$rss_version" -o -z "$encoding" -o -z "$host" -o -z "$title" -o -z "$link" -o -z "$description" -o -z "$language" -o -z "$copyright" -o -z "$author" ];then
-	   echo "Ошибка RSS: rssconfig заполнен не правильно или не полностью. Отмена создания ленты..."
+	   echo "Ошибка RSS: rssconfig заполнен не правильно или не полностью. Удалите rssconfig и повторите попытку позднее. Отмена создания ленты..."
 	   exit 1
 	   fi
 else
